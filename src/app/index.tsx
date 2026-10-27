@@ -1,98 +1,227 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { useTheme, Colors } from "../app-theme";
+import { useData } from "../app-data";
+import { MonthPicker } from "../month-picker";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const CHART_H = 110;
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function Dashboard() {
+  const { colors } = useTheme();
+  const { entries, goal, budget, saved, monthEntries, monthSaved, monthSpent } =
+    useData();
+  const spent = monthSpent;
+  const s = makeStyles(colors);
+
+  const goalNum = Number(goal) || 0;
+  const budgetNum = Number(budget) || 0;
+  const goalProgress = goalNum > 0 ? Math.min(saved / goalNum, 1) : 0;
+  const budgetUsed = budgetNum > 0 ? Math.min(spent / budgetNum, 1) : 0;
+  const remaining = budgetNum - spent;
+  const toGo = Math.max(goalNum - saved, 0);
+  const overBudget = remaining < 0;
+
+  // Last 7 days (oldest -> today)
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    day.setDate(day.getDate() - (6 - i));
+    const next = new Date(day);
+    next.setDate(day.getDate() + 1);
+
+    const inDay = entries.filter((e) => {
+      const t = new Date(e.date).getTime();
+      return t >= day.getTime() && t < next.getTime();
+    });
+
+    return {
+      label: DAYS[day.getDay()],
+      ipon: inDay.filter((e) => e.kind === "ipon").reduce((a, e) => a + e.amount, 0),
+      gastos: inDay.filter((e) => e.kind === "gastos").reduce((a, e) => a + e.amount, 0),
+    };
+  });
+
+  const maxVal = Math.max(1, ...week.flatMap((w) => [w.ipon, w.gastos]));
+  const barH = (v: number) => (v > 0 ? Math.max((v / maxVal) * CHART_H, 4) : 0);
+
+  const recent = monthEntries.slice(0, 5);
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={s.container}
+    >
+      <MonthPicker />
+
+      {/* Saved / Spent */}
+      <View style={s.statsRow}>
+        <View style={[s.card, s.stat]}>
+          <Text style={s.label}>Saved this month</Text>
+          <Text style={[s.statValue, { color: colors.green }]}>
+            ₱{monthSaved.toLocaleString()}
+          </Text>
+        </View>
+        <View style={[s.card, s.stat]}>
+          <Text style={s.label}>Spent this month</Text>
+          <Text style={[s.statValue, { color: colors.red }]}>
+            ₱{spent.toLocaleString()}
+          </Text>
+        </View>
+      </View>
+
+      {/* Budget */}
+      <View style={s.card}>
+        <Text style={s.label}>Budget left</Text>
+        <Text style={[s.big, overBudget && { color: colors.red }]}>
+          ₱{remaining.toLocaleString()}
+        </Text>
+        <View style={s.barBg}>
+          <View
+            style={[
+              s.barFill,
+              {
+                width: `${budgetUsed * 100}%`,
+                backgroundColor: overBudget ? colors.red : colors.blue,
+              },
+            ]}
+          />
+        </View>
+        <Text style={s.small}>
+          {overBudget
+            ? `Over budget by ₱${Math.abs(remaining).toLocaleString()}`
+            : `${Math.round(budgetUsed * 100)}% of ₱${budgetNum.toLocaleString()} used`}
+        </Text>
+      </View>
+
+      {/* Goal */}
+      <View style={s.card}>
+        <Text style={s.label}>Ipon goal (all time)</Text>
+        <Text style={s.big}>{Math.round(goalProgress * 100)}%</Text>
+        <View style={s.barBg}>
+          <View
+            style={[s.barFill, { width: `${goalProgress * 100}%`, backgroundColor: colors.green }]}
+          />
+        </View>
+        <Text style={s.small}>
+          {toGo === 0 && goalNum > 0
+            ? "Goal reached! 🎉"
+            : `₱${toGo.toLocaleString()} to go (goal ₱${goalNum.toLocaleString()})`}
+        </Text>
+      </View>
+
+      {/* Last 7 days chart */}
+      <View style={s.card}>
+        <Text style={s.label}>Last 7 days</Text>
+        <View style={s.chart}>
+          {week.map((w, i) => (
+            <View key={i} style={s.dayCol}>
+              <View style={s.bars}>
+                <View style={[s.bar, { height: barH(w.ipon), backgroundColor: colors.green }]} />
+                <View style={[s.bar, { height: barH(w.gastos), backgroundColor: colors.red }]} />
+              </View>
+              <Text style={s.dayLabel}>{w.label}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={s.legend}>
+          <View style={s.legendItem}>
+            <View style={[s.dot, { backgroundColor: colors.green }]} />
+            <Text style={s.small}>Ipon</Text>
+          </View>
+          <View style={s.legendItem}>
+            <View style={[s.dot, { backgroundColor: colors.red }]} />
+            <Text style={s.small}>Gastos</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Recent activity */}
+      <View style={s.card}>
+        <Text style={s.label}>Recent activity</Text>
+        {recent.length === 0 ? (
+          <Text style={s.small}>No entries this month yet.</Text>
+        ) : (
+          recent.map((item) => {
+            const isIpon = item.kind === "ipon";
+            return (
+              <View key={item.id} style={s.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.rowText}>
+                    {item.note || (isIpon ? "Ipon" : "Expense")}
+                  </Text>
+                  <Text style={s.date}>{formatDate(item.date)}</Text>
+                </View>
+                <Text
+                  style={{
+                    color: isIpon ? colors.green : colors.red,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {isIpon ? "+" : "-"}₱{item.amount.toLocaleString()}
+                </Text>
+              </View>
+            );
+          })
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    container: { padding: 16, paddingBottom: 32 },
+    card: {
+      backgroundColor: c.card,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 12,
+    },
+    statsRow: { flexDirection: "row", gap: 12 },
+    stat: { flex: 1 },
+    statValue: { fontSize: 24, fontWeight: "bold", marginTop: 4 },
+    label: { fontSize: 14, color: c.subtext },
+    big: { fontSize: 32, fontWeight: "bold", color: c.text, marginTop: 4 },
+    small: { color: c.subtext, marginTop: 6, fontSize: 13 },
+    barBg: {
+      height: 12,
+      backgroundColor: c.barBg,
+      borderRadius: 6,
+      marginTop: 10,
+      overflow: "hidden",
+    },
+    barFill: { height: 12, borderRadius: 6 },
+    chart: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      marginTop: 16,
+      height: CHART_H + 24,
+    },
+    dayCol: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
+    bars: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 3,
+      height: CHART_H,
+    },
+    bar: { width: 10, borderRadius: 4 },
+    dayLabel: { color: c.subtext, fontSize: 11, marginTop: 6 },
+    legend: { flexDirection: "row", gap: 16, marginTop: 8 },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+    dot: { width: 10, height: 10, borderRadius: 5 },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderColor: c.border,
+    },
+    rowText: { color: c.text },
+    date: { color: c.subtext, fontSize: 12, marginTop: 2 },
+  });
