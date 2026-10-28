@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Image, Text, Animated, StyleSheet } from "react-native";
-import { Tabs } from "expo-router";
+import { View, Image, Text, Pressable, Animated, StyleSheet } from "react-native";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeProvider, useTheme } from "../app-theme";
 import { DataProvider } from "../app-data";
@@ -49,6 +49,22 @@ function HeaderTitle({ title }: { title: string }) {
   );
 }
 
+// Back arrow for the screens that live under the "More" tab
+function BackToMore() {
+  const router = useRouter();
+  const { colors } = useTheme();
+
+  return (
+    <Pressable
+      onPress={() => router.navigate("/more" as any)}
+      hitSlop={12}
+      style={{ paddingLeft: 12 }}
+    >
+      <Ionicons name="chevron-back" size={24} color={colors.text} />
+    </Pressable>
+  );
+}
+
 function TabsLayout() {
   const { colors } = useTheme();
 
@@ -57,6 +73,7 @@ function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: colors.subtext,
+        tabBarLabelStyle: { fontSize: 11 },
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
@@ -69,6 +86,7 @@ function TabsLayout() {
         name="index"
         options={{
           title: "Dashboard",
+          tabBarLabel: "Home",
           headerTitle: () => <HeaderTitle title="Dashboard" />,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="grid" size={size} color={color} />
@@ -105,12 +123,57 @@ function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="utang"
+        options={{
+          title: "Utang & Ambagan",
+          tabBarLabel: "Utang",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: "More",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* Hidden from the tab bar, opened from the More tab */}
+      <Tabs.Screen
+        name="bot"
+        options={{
+          href: null,
+          title: "Ipon Bot",
+          headerTitle: () => <HeaderTitle title="Ipon Bot" />,
+          headerLeft: () => <BackToMore />,
+        }}
+      />
+      <Tabs.Screen
+        name="recurring"
+        options={{
+          href: null,
+          title: "Recurring",
+          headerLeft: () => <BackToMore />,
+        }}
+      />
+      <Tabs.Screen
+        name="export"
+        options={{
+          href: null,
+          title: "Export & share",
+          headerLeft: () => <BackToMore />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
+          href: null,
           title: "Settings",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
-          ),
+          headerLeft: () => <BackToMore />,
         }}
       />
     </Tabs>
