@@ -1,25 +1,51 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useTheme, Colors } from "../app-theme";
-import { useData } from "../app-data";
+import { useData, CATEGORIES, categoryOf, DEFAULT_GOAL_ID } from "../app-data";
 import { MonthPicker } from "../month-picker";
+import { BotTip } from "../ipon-bot";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const CHART_H = 110;
 
 export default function Dashboard() {
   const { colors } = useTheme();
-  const { entries, goal, budget, saved, monthEntries, monthSaved, monthSpent } =
-    useData();
+  const {
+    entries,
+    goals,
+    goalSaved,
+    wallets,
+    walletBalance,
+    budget,
+    monthEntries,
+    monthSaved,
+    monthSpent,
+    isCurrentMonth,
+  } = useData();
   const spent = monthSpent;
   const s = makeStyles(colors);
 
-  const goalNum = Number(goal) || 0;
+  const totalBalance = wallets.reduce((a, w) => a + walletBalance(w.id), 0);
+
   const budgetNum = Number(budget) || 0;
-  const goalProgress = goalNum > 0 ? Math.min(saved / goalNum, 1) : 0;
   const budgetUsed = budgetNum > 0 ? Math.min(spent / budgetNum, 1) : 0;
   const remaining = budgetNum - spent;
-  const toGo = Math.max(goalNum - saved, 0);
   const overBudget = remaining < 0;
+
+  // Daily allowance (current month only, counting today)
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeft = daysInMonth - now.getDate() + 1;
+  const allowance = daysLeft > 0 ? Math.floor(remaining / daysLeft) : 0;
+
+  // Spending by category (selected month)
+  const byCategory = CATEGORIES.map((cat) => ({
+    ...cat,
+    total: monthEntries
+      .filter((e) => e.kind === "gastos" && categoryOf(e.category).key === cat.key)
+      .reduce((a, e) => a + e.amount, 0),
+  }))
+    .filter((c) => c.total > 0)
+    .sort((a, b) => b.total - a.total);
 
   // Last 7 days (oldest -> today)
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -54,7 +80,30 @@ export default function Dashboard() {
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={s.container}
     >
+      <BotTip />
+
       <MonthPicker />
+
+      {/* Wallets */}
+      <View style={s.card}>
+        <Text style={s.label}>Total balance (all wallets)</Text>
+        <Text style={[s.big, totalBalance < 0 && { color: colors.red }]}>
+          ₱{totalBalance.toLocaleString()}
+        </Text>
+        {wallets.map((w) => {
+          const bal = walletBalance(w.id);
+          return (
+            <View key={w.id} style={[s.catHead, { marginTop: 10 }]}>
+              <Text style={s.rowText}>
+                {w.emoji} {w.name}
+              </Text>
+              <Text style={[s.rowText, bal < 0 && { color: colors.red }]}>
+                ₱{bal.toLocaleString()}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
 
       {/* Saved / Spent */}
       <View style={s.statsRow}>
@@ -94,22 +143,76 @@ export default function Dashboard() {
             ? `Over budget by ₱${Math.abs(remaining).toLocaleString()}`
             : `${Math.round(budgetUsed * 100)}% of ₱${budgetNum.toLocaleString()} used`}
         </Text>
+        {isCurrentMonth && !overBudget && (
+          <Text style={[s.small, { color: colors.text, fontWeight: "600" }]}>
+            💡 You can spend about ₱{allowance.toLocaleString()} per day
+            ({daysLeft} {daysLeft === 1 ? "day" : "days"} left)
+          </Text>
+        )}
       </View>
 
-      {/* Goal */}
+      {/* Where your money went */}
       <View style={s.card}>
-        <Text style={s.label}>Ipon goal (all time)</Text>
-        <Text style={s.big}>{Math.round(goalProgress * 100)}%</Text>
-        <View style={s.barBg}>
-          <View
-            style={[s.barFill, { width: `${goalProgress * 100}%`, backgroundColor: colors.green }]}
-          />
-        </View>
-        <Text style={s.small}>
-          {toGo === 0 && goalNum > 0
-            ? "Goal reached! 🎉"
-            : `₱${toGo.toLocaleString()} to go (goal ₱${goalNum.toLocaleString()})`}
-        </Text>
+        <Text style={s.label}>Where your money went</Text>
+        {byCategory.length === 0 ? (
+          <Text style={s.small}>No expenses this month yet.</Text>
+        ) : (
+          byCategory.map((c) => {
+            const pct = spent > 0 ? c.total / spent : 0;
+            return (
+              <View key={c.key} style={{ marginTop: 12 }}>
+                <View style={s.catHead}>
+                  <Text style={s.rowText}>
+                    {c.emoji} {c.label}
+                  </Text>
+                  <Text style={s.rowText}>
+                    ₱{c.total.toLocaleString()} · {Math.round(pct * 100)}%
+                  </Text>
+                </View>
+                <View style={s.catBarBg}>
+                  <View
+                    style={[
+                      s.catBarFill,
+                      { width: `${pct * 100}%`, backgroundColor: colors.blue },
+                    ]}
+                  />
+                </View>
+              </View>
+            );
+          })
+        )}
+      </View>
+
+      {/* Goals */}
+      <View style={s.card}>
+        <Text style={s.label}>Ipon goals (all time)</Text>
+        {goals.map((g) => {
+          const done = goalSaved(g.id);
+          const pct = g.target > 0 ? Math.min(done / g.target, 1) : 0;
+          const reached = g.target > 0 && done >= g.target;
+          return (
+            <View key={g.id} style={{ marginTop: 14 }}>
+              <View style={s.catHead}>
+                <Text style={s.rowText}>
+                  {g.emoji} {g.name}
+                </Text>
+                <Text style={s.rowText}>
+                  ₱{done.toLocaleString()} / ₱{g.target.toLocaleString()}
+                </Text>
+              </View>
+              <View style={s.barBg}>
+                <View
+                  style={[s.barFill, { width: `${pct * 100}%`, backgroundColor: colors.green }]}
+                />
+              </View>
+              <Text style={s.small}>
+                {reached
+                  ? "Goal reached! 🎉"
+                  : `${Math.round(pct * 100)}% · ₱${Math.max(g.target - done, 0).toLocaleString()} to go`}
+              </Text>
+            </View>
+          );
+        })}
       </View>
 
       {/* Last 7 days chart */}
@@ -146,11 +249,14 @@ export default function Dashboard() {
         ) : (
           recent.map((item) => {
             const isIpon = item.kind === "ipon";
+            const cat = categoryOf(item.category);
+            const g = goals.find((x) => x.id === (item.goalId ?? DEFAULT_GOAL_ID));
             return (
               <View key={item.id} style={s.row}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.rowText}>
-                    {item.note || (isIpon ? "Ipon" : "Expense")}
+                    {isIpon ? g?.emoji ?? "💰" : cat.emoji}{" "}
+                    {item.note || (isIpon ? g?.name ?? "Ipon" : cat.label)}
                   </Text>
                   <Text style={s.date}>{formatDate(item.date)}</Text>
                 </View>
@@ -196,6 +302,15 @@ const makeStyles = (c: Colors) =>
       overflow: "hidden",
     },
     barFill: { height: 12, borderRadius: 6 },
+    catHead: { flexDirection: "row", justifyContent: "space-between" },
+    catBarBg: {
+      height: 8,
+      backgroundColor: c.barBg,
+      borderRadius: 4,
+      marginTop: 6,
+      overflow: "hidden",
+    },
+    catBarFill: { height: 8, borderRadius: 4 },
     chart: {
       flexDirection: "row",
       justifyContent: "space-between",

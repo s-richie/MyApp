@@ -1,25 +1,29 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useTheme, Colors } from "../app-theme";
-import { useData } from "../app-data";
+import { useData, CATEGORIES, categoryOf } from "../app-data";
 import { MonthPicker } from "../month-picker";
+import { WalletPicker } from "../wallet-picker";
 
 export default function Budget() {
   const { colors } = useTheme();
-  const { monthEntries, addEntry, budget, setBudget, monthSpent } = useData();
+  const { monthEntries, addEntry, budget, setBudget, monthSpent, wallets } = useData();
   const spent = monthSpent;
   const s = makeStyles(colors);
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [category, setCategory] = useState("food");
+  const [walletId, setWalletId] = useState("");
 
+  const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
   const remaining = (Number(budget) || 0) - spent;
   const recent = monthEntries.filter((e) => e.kind === "gastos").slice(0, 3);
 
   const handleAdd = () => {
     const value = Number(amount);
     if (!value || value <= 0) return;
-    addEntry("gastos", value, note);
+    addEntry("gastos", value, note, category, activeWallet);
     setAmount("");
     setNote("");
   };
@@ -41,6 +45,23 @@ export default function Budget() {
       </Text>
       <Text style={s.small}>Spent: ₱{spent.toLocaleString()}</Text>
 
+      <Text style={s.label}>Category</Text>
+      <View style={s.chips}>
+        {CATEGORIES.map((c) => (
+          <Pressable
+            key={c.key}
+            onPress={() => setCategory(c.key)}
+            style={[s.chip, category === c.key && s.chipActive]}
+          >
+            <Text style={[s.chipText, category === c.key && s.chipTextActive]}>
+              {c.emoji} {c.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <WalletPicker value={activeWallet} onChange={setWalletId} />
+
       <TextInput
         style={s.input}
         placeholder="Amount"
@@ -51,7 +72,7 @@ export default function Budget() {
       />
       <TextInput
         style={s.input}
-        placeholder="What was it for? (food, fare...)"
+        placeholder="Note (optional)"
         placeholderTextColor={colors.subtext}
         value={note}
         onChangeText={setNote}
@@ -64,12 +85,17 @@ export default function Budget() {
       {recent.length === 0 ? (
         <Text style={s.small}>No expenses this month yet.</Text>
       ) : (
-        recent.map((item) => (
-          <View key={item.id} style={s.row}>
-            <Text style={s.rowText}>{item.note || "Expense"}</Text>
-            <Text style={s.amount}>-₱{item.amount.toLocaleString()}</Text>
-          </View>
-        ))
+        recent.map((item) => {
+          const cat = categoryOf(item.category);
+          return (
+            <View key={item.id} style={s.row}>
+              <Text style={s.rowText}>
+                {cat.emoji} {item.note || cat.label}
+              </Text>
+              <Text style={s.amount}>-₱{item.amount.toLocaleString()}</Text>
+            </View>
+          );
+        })
       )}
       <Text style={s.small}>See everything in the History tab.</Text>
     </ScrollView>
@@ -92,6 +118,18 @@ const makeStyles = (c: Colors) =>
     },
     big: { fontSize: 36, fontWeight: "bold", color: c.text },
     small: { color: c.subtext, marginBottom: 12, marginTop: 4 },
+    chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
+    chip: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    chipActive: { backgroundColor: c.blue, borderColor: c.blue },
+    chipText: { color: c.text },
+    chipTextActive: { color: "#fff", fontWeight: "bold" },
     button: { backgroundColor: c.blue, padding: 12, borderRadius: 8, alignItems: "center", marginVertical: 8 },
     buttonText: { color: "#fff", fontWeight: "bold" },
     row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderColor: c.border },
