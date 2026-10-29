@@ -1,14 +1,15 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import { useData, CATEGORIES, categoryOf, DEFAULT_GOAL_ID } from "../app-data";
 import { MonthPicker } from "../month-picker";
 import { BotTip } from "../ipon-bot";
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const CHART_H = 110;
 
 export default function Dashboard() {
   const { colors } = useTheme();
+  const { t, fdate, dayShort } = useI18n();
   const {
     entries,
     goals,
@@ -56,12 +57,12 @@ export default function Dashboard() {
     next.setDate(day.getDate() + 1);
 
     const inDay = entries.filter((e) => {
-      const t = new Date(e.date).getTime();
-      return t >= day.getTime() && t < next.getTime();
+      const time = new Date(e.date).getTime();
+      return time >= day.getTime() && time < next.getTime();
     });
 
     return {
-      label: DAYS[day.getDay()],
+      label: dayShort(day.getDay()),
       ipon: inDay.filter((e) => e.kind === "ipon").reduce((a, e) => a + e.amount, 0),
       gastos: inDay.filter((e) => e.kind === "gastos").reduce((a, e) => a + e.amount, 0),
     };
@@ -71,9 +72,6 @@ export default function Dashboard() {
   const barH = (v: number) => (v > 0 ? Math.max((v / maxVal) * CHART_H, 4) : 0);
 
   const recent = monthEntries.slice(0, 5);
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return (
     <ScrollView
@@ -86,7 +84,7 @@ export default function Dashboard() {
 
       {/* Wallets */}
       <View style={s.card}>
-        <Text style={s.label}>Total balance (all wallets)</Text>
+        <Text style={s.label}>{t("Total balance (all wallets)")}</Text>
         <Text style={[s.big, totalBalance < 0 && { color: colors.red }]}>
           ₱{totalBalance.toLocaleString()}
         </Text>
@@ -108,13 +106,13 @@ export default function Dashboard() {
       {/* Saved / Spent */}
       <View style={s.statsRow}>
         <View style={[s.card, s.stat]}>
-          <Text style={s.label}>Saved this month</Text>
+          <Text style={s.label}>{t("Saved this month")}</Text>
           <Text style={[s.statValue, { color: colors.green }]}>
             ₱{monthSaved.toLocaleString()}
           </Text>
         </View>
         <View style={[s.card, s.stat]}>
-          <Text style={s.label}>Spent this month</Text>
+          <Text style={s.label}>{t("Spent this month")}</Text>
           <Text style={[s.statValue, { color: colors.red }]}>
             ₱{spent.toLocaleString()}
           </Text>
@@ -123,7 +121,7 @@ export default function Dashboard() {
 
       {/* Budget */}
       <View style={s.card}>
-        <Text style={s.label}>Budget left</Text>
+        <Text style={s.label}>{t("Budget left")}</Text>
         <Text style={[s.big, overBudget && { color: colors.red }]}>
           ₱{remaining.toLocaleString()}
         </Text>
@@ -140,22 +138,27 @@ export default function Dashboard() {
         </View>
         <Text style={s.small}>
           {overBudget
-            ? `Over budget by ₱${Math.abs(remaining).toLocaleString()}`
-            : `${Math.round(budgetUsed * 100)}% of ₱${budgetNum.toLocaleString()} used`}
+            ? t("Over budget by ₱{n}", { n: Math.abs(remaining).toLocaleString() })
+            : t("{p}% of ₱{n} used", {
+                p: Math.round(budgetUsed * 100),
+                n: budgetNum.toLocaleString(),
+              })}
         </Text>
         {isCurrentMonth && !overBudget && (
           <Text style={[s.small, { color: colors.text, fontWeight: "600" }]}>
-            💡 You can spend about ₱{allowance.toLocaleString()} per day
-            ({daysLeft} {daysLeft === 1 ? "day" : "days"} left)
+            {t("💡 You can spend about ₱{a} per day ({d} left)", {
+              a: allowance.toLocaleString(),
+              d: `${daysLeft} ${t(daysLeft === 1 ? "day" : "days")}`,
+            })}
           </Text>
         )}
       </View>
 
       {/* Where your money went */}
       <View style={s.card}>
-        <Text style={s.label}>Where your money went</Text>
+        <Text style={s.label}>{t("Where your money went")}</Text>
         {byCategory.length === 0 ? (
-          <Text style={s.small}>No expenses this month yet.</Text>
+          <Text style={s.small}>{t("No expenses this month yet.")}</Text>
         ) : (
           byCategory.map((c) => {
             const pct = spent > 0 ? c.total / spent : 0;
@@ -163,7 +166,7 @@ export default function Dashboard() {
               <View key={c.key} style={{ marginTop: 12 }}>
                 <View style={s.catHead}>
                   <Text style={s.rowText}>
-                    {c.emoji} {c.label}
+                    {c.emoji} {t(c.label)}
                   </Text>
                   <Text style={s.rowText}>
                     ₱{c.total.toLocaleString()} · {Math.round(pct * 100)}%
@@ -185,7 +188,7 @@ export default function Dashboard() {
 
       {/* Goals */}
       <View style={s.card}>
-        <Text style={s.label}>Ipon goals (all time)</Text>
+        <Text style={s.label}>{t("Ipon goals (all time)")}</Text>
         {goals.map((g) => {
           const done = goalSaved(g.id);
           const pct = g.target > 0 ? Math.min(done / g.target, 1) : 0;
@@ -207,8 +210,11 @@ export default function Dashboard() {
               </View>
               <Text style={s.small}>
                 {reached
-                  ? "Goal reached! 🎉"
-                  : `${Math.round(pct * 100)}% · ₱${Math.max(g.target - done, 0).toLocaleString()} to go`}
+                  ? t("Goal reached! 🎉")
+                  : t("{p}% · ₱{n} to go", {
+                      p: Math.round(pct * 100),
+                      n: Math.max(g.target - done, 0).toLocaleString(),
+                    })}
               </Text>
             </View>
           );
@@ -217,7 +223,7 @@ export default function Dashboard() {
 
       {/* Last 7 days chart */}
       <View style={s.card}>
-        <Text style={s.label}>Last 7 days</Text>
+        <Text style={s.label}>{t("Last 7 days")}</Text>
         <View style={s.chart}>
           {week.map((w, i) => (
             <View key={i} style={s.dayCol}>
@@ -232,20 +238,20 @@ export default function Dashboard() {
         <View style={s.legend}>
           <View style={s.legendItem}>
             <View style={[s.dot, { backgroundColor: colors.green }]} />
-            <Text style={s.small}>Ipon</Text>
+            <Text style={s.small}>{t("Ipon")}</Text>
           </View>
           <View style={s.legendItem}>
             <View style={[s.dot, { backgroundColor: colors.red }]} />
-            <Text style={s.small}>Gastos</Text>
+            <Text style={s.small}>{t("Gastos")}</Text>
           </View>
         </View>
       </View>
 
       {/* Recent activity */}
       <View style={s.card}>
-        <Text style={s.label}>Recent activity</Text>
+        <Text style={s.label}>{t("Recent activity")}</Text>
         {recent.length === 0 ? (
-          <Text style={s.small}>No entries this month yet.</Text>
+          <Text style={s.small}>{t("No entries this month yet.")}</Text>
         ) : (
           recent.map((item) => {
             const isIpon = item.kind === "ipon";
@@ -256,9 +262,9 @@ export default function Dashboard() {
                 <View style={{ flex: 1 }}>
                   <Text style={s.rowText}>
                     {isIpon ? g?.emoji ?? "💰" : cat.emoji}{" "}
-                    {item.note || (isIpon ? g?.name ?? "Ipon" : cat.label)}
+                    {item.note || (isIpon ? g?.name ?? "Ipon" : t(cat.label))}
                   </Text>
-                  <Text style={s.date}>{formatDate(item.date)}</Text>
+                  <Text style={s.date}>{fdate(item.date)}</Text>
                 </View>
                 <Text
                   style={{

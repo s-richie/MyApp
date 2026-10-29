@@ -13,9 +13,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, Colors } from "../app-theme";
 import { useData, WALLET_EMOJIS, Wallet } from "../app-data";
+import { useI18n, Lang } from "../i18n";
+import { SecurityCard } from "../security-card";
 
 export default function Settings() {
   const { isDark, setDark, colors } = useTheme();
+  const { lang, setLang, t } = useI18n();
   const { wallets, addWallet, updateWallet, deleteWallet, walletBalance } = useData();
   const s = makeStyles(colors);
 
@@ -54,15 +57,15 @@ export default function Settings() {
 
   const confirmDelete = (w: Wallet) => {
     if (wallets.length <= 1) {
-      Alert.alert("Can't delete", "You need at least one wallet.");
+      Alert.alert(t("Can't delete"), t("You need at least one wallet."));
       return;
     }
     Alert.alert(
-      `Delete "${w.name}"?`,
-      "Its entries will be moved to another wallet.",
+      t('Delete "{name}"?', { name: w.name }),
+      t("Its entries will be moved to another wallet."),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteWallet(w.id) },
+        { text: t("Cancel"), style: "cancel" },
+        { text: t("Delete"), style: "destructive", onPress: () => deleteWallet(w.id) },
       ]
     );
   };
@@ -77,9 +80,9 @@ export default function Settings() {
       <View style={s.card}>
         <View style={s.rowBetween}>
           <View>
-            <Text style={s.title}>Dark mode</Text>
+            <Text style={s.title}>{t("Dark mode")}</Text>
             <Text style={s.small}>
-              {isDark ? "Dark theme is on" : "Light theme is on"}
+              {isDark ? t("Dark theme is on") : t("Light theme is on")}
             </Text>
           </View>
           <Switch
@@ -90,17 +93,40 @@ export default function Settings() {
         </View>
       </View>
 
+      {/* Language */}
+      <View style={[s.card, { marginTop: 12 }]}>
+        <Text style={s.title}>{t("Language")}</Text>
+        <Text style={s.small}>{t("Choose the app language.")}</Text>
+        <View style={s.langRow}>
+          {(["en", "fil"] as Lang[]).map((l) => (
+            <Pressable
+              key={l}
+              onPress={() => setLang(l)}
+              style={[s.chip, lang === l && s.chipActive]}
+            >
+              <Text style={[s.chipText, lang === l && s.chipTextActive]}>
+                {l === "en" ? "English" : "Filipino"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Security */}
+      <SecurityCard />
+
       {/* Wallets */}
       <View style={s.sectionRow}>
-        <Text style={s.section}>Wallets</Text>
+        <Text style={s.section}>{t("Wallets")}</Text>
         <Pressable onPress={openNew} style={s.newBtn}>
           <Ionicons name="add" size={18} color="#fff" />
-          <Text style={s.newBtnText}>New wallet</Text>
+          <Text style={s.newBtnText}>{t("New wallet")}</Text>
         </Pressable>
       </View>
       <Text style={s.small}>
-        Balance = starting balance + ipon − gastos. Edit the starting balance
-        anytime to match the money you really have.
+        {t(
+          "Balance = starting balance + ipon − gastos. Edit the starting balance anytime to match the money you really have."
+        )}
       </Text>
 
       {wallets.map((w) => {
@@ -123,7 +149,9 @@ export default function Settings() {
             <Text style={[s.balance, bal < 0 && { color: colors.red }]}>
               ₱{bal.toLocaleString()}
             </Text>
-            <Text style={s.small}>Starting balance: ₱{w.start.toLocaleString()}</Text>
+            <Text style={s.small}>
+              {t("Starting balance: ₱{n}", { n: w.start.toLocaleString() })}
+            </Text>
           </View>
         );
       })}
@@ -138,19 +166,19 @@ export default function Settings() {
         <View style={s.overlay}>
           <View style={s.modal}>
             <Text style={s.modalTitle}>
-              {editingId ? "Edit wallet" : "New wallet"}
+              {editingId ? t("Edit wallet") : t("New wallet")}
             </Text>
 
             <TextInput
               style={s.input}
-              placeholder="Name (e.g. Maya, Bank)"
+              placeholder={t("Name (e.g. Maya, Bank)")}
               placeholderTextColor={colors.subtext}
               value={wName}
               onChangeText={setWName}
             />
             <TextInput
               style={s.input}
-              placeholder="Starting balance (₱)"
+              placeholder={t("Starting balance (₱)")}
               placeholderTextColor={colors.subtext}
               value={wStart}
               onChangeText={setWStart}
@@ -174,13 +202,15 @@ export default function Settings() {
                 style={[s.modalBtn, { backgroundColor: colors.barBg }]}
                 onPress={() => setModalOpen(false)}
               >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>Cancel</Text>
+                <Text style={{ color: colors.text, fontWeight: "600" }}>
+                  {t("Cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 style={[s.modalBtn, { backgroundColor: colors.green }]}
                 onPress={saveWallet}
               >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Save</Text>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
               </Pressable>
             </View>
           </View>
@@ -207,6 +237,18 @@ const makeStyles = (c: Colors) =>
     },
     title: { color: c.text, fontSize: 16, fontWeight: "bold" },
     small: { color: c.subtext, fontSize: 13, marginTop: 4 },
+    langRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+    chip: {
+      paddingVertical: 8,
+      paddingHorizontal: 18,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.background,
+    },
+    chipActive: { backgroundColor: c.green, borderColor: c.green },
+    chipText: { color: c.text },
+    chipTextActive: { color: "#fff", fontWeight: "bold" },
     section: { fontSize: 16, fontWeight: "bold", color: c.text },
     sectionRow: {
       flexDirection: "row",
