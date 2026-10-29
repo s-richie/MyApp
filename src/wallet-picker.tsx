@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "./app-theme";
 import { useData } from "./app-data";
+import { useI18n } from "./i18n";
 
 export function WalletPicker({
   value,
@@ -11,10 +12,11 @@ export function WalletPicker({
 }) {
   const { colors } = useTheme();
   const { wallets } = useData();
+  const { t } = useI18n();
 
   return (
     <View>
-      <Text style={{ color: colors.subtext, fontSize: 14 }}>Wallet</Text>
+      <Text style={{ color: colors.subtext, fontSize: 14 }}>{t("Wallet")}</Text>
       <View style={s.chips}>
         {wallets.map((w) => {
           const active = value === w.id;

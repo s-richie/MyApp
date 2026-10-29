@@ -2,10 +2,12 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "./app-theme";
 import { useData } from "./app-data";
+import { useI18n } from "./i18n";
 
 export function MonthPicker() {
   const { colors } = useTheme();
   const { monthLabel, shiftMonth, isCurrentMonth } = useData();
+  const { localizeMonth } = useI18n();
 
   return (
     <View
@@ -17,7 +19,9 @@ export function MonthPicker() {
       <Pressable onPress={() => shiftMonth(-1)} hitSlop={12}>
         <Ionicons name="chevron-back" size={22} color={colors.text} />
       </Pressable>
-      <Text style={[s.label, { color: colors.text }]}>{monthLabel}</Text>
+      <Text style={[s.label, { color: colors.text }]}>
+        {localizeMonth(monthLabel)}
+      </Text>
       <Pressable
         onPress={() => shiftMonth(1)}
         disabled={isCurrentMonth}

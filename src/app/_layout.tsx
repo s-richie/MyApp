@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Image, Text, Pressable, Animated, StyleSheet } from "react-native";
-import { Tabs, useRouter } from "expo-router";
+import { View, Image, Text, Animated, StyleSheet } from "react-native";
+import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeProvider, useTheme } from "../app-theme";
 import { DataProvider } from "../app-data";
+import { LockProvider } from "../app-lock";
+import { LanguageProvider, useI18n } from "../i18n";
 
 function Splash({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n();
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.7)).current;
 
@@ -28,7 +31,7 @@ function Splash({ onDone }: { onDone: () => void }) {
           resizeMode="contain"
         />
         <Text style={s.title}>Ipon Bot</Text>
-        <Text style={s.tagline}>Save smart. Spend wise.</Text>
+        <Text style={s.tagline}>{t("Save smart. Spend wise.")}</Text>
       </Animated.View>
     </View>
   );
@@ -49,24 +52,9 @@ function HeaderTitle({ title }: { title: string }) {
   );
 }
 
-// Back arrow for the screens that live under the "More" tab
-function BackToMore() {
-  const router = useRouter();
-  const { colors } = useTheme();
-
-  return (
-    <Pressable
-      onPress={() => router.navigate("/more" as any)}
-      hitSlop={12}
-      style={{ paddingLeft: 12 }}
-    >
-      <Ionicons name="chevron-back" size={24} color={colors.text} />
-    </Pressable>
-  );
-}
-
 function TabsLayout() {
   const { colors } = useTheme();
+  const { t } = useI18n();
 
   return (
     <Tabs
@@ -85,9 +73,9 @@ function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Dashboard",
-          tabBarLabel: "Home",
-          headerTitle: () => <HeaderTitle title="Dashboard" />,
+          title: t("Dashboard"),
+          tabBarLabel: t("Home"),
+          headerTitle: () => <HeaderTitle title={t("Dashboard")} />,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="grid" size={size} color={color} />
           ),
@@ -96,8 +84,8 @@ function TabsLayout() {
       <Tabs.Screen
         name="ipon"
         options={{
-          title: "Ipon",
-          headerTitle: () => <HeaderTitle title="Ipon" />,
+          title: t("Ipon"),
+          headerTitle: () => <HeaderTitle title={t("Ipon")} />,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="wallet" size={size} color={color} />
           ),
@@ -106,8 +94,8 @@ function TabsLayout() {
       <Tabs.Screen
         name="budget"
         options={{
-          title: "Budget",
-          headerTitle: () => <HeaderTitle title="Budget" />,
+          title: t("Budget"),
+          headerTitle: () => <HeaderTitle title={t("Budget")} />,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="receipt" size={size} color={color} />
           ),
@@ -116,7 +104,7 @@ function TabsLayout() {
       <Tabs.Screen
         name="history"
         options={{
-          title: "History",
+          title: t("History"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time" size={size} color={color} />
           ),
@@ -125,8 +113,8 @@ function TabsLayout() {
       <Tabs.Screen
         name="utang"
         options={{
-          title: "Utang & Ambagan",
-          tabBarLabel: "Utang",
+          title: t("Utang & Ambagan"),
+          tabBarLabel: t("Utang"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
           ),
@@ -135,47 +123,18 @@ function TabsLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: "More",
+          title: t("More"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
           ),
         }}
       />
 
-      {/* Hidden from the tab bar, opened from the More tab */}
-      <Tabs.Screen
-        name="bot"
-        options={{
-          href: null,
-          title: "Ipon Bot",
-          headerTitle: () => <HeaderTitle title="Ipon Bot" />,
-          headerLeft: () => <BackToMore />,
-        }}
-      />
-      <Tabs.Screen
-        name="recurring"
-        options={{
-          href: null,
-          title: "Recurring",
-          headerLeft: () => <BackToMore />,
-        }}
-      />
-      <Tabs.Screen
-        name="export"
-        options={{
-          href: null,
-          title: "Export & share",
-          headerLeft: () => <BackToMore />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          href: null,
-          title: "Settings",
-          headerLeft: () => <BackToMore />,
-        }}
-      />
+      {/* These screens open from inside the More tab, so they stay out of the tab bar */}
+      <Tabs.Screen name="bot" options={{ href: null }} />
+      <Tabs.Screen name="recurring" options={{ href: null }} />
+      <Tabs.Screen name="export" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }
@@ -183,16 +142,20 @@ function TabsLayout() {
 export default function Layout() {
   const [showSplash, setShowSplash] = useState(true);
 
-  if (showSplash) {
-    return <Splash onDone={() => setShowSplash(false)} />;
-  }
-
   return (
-    <ThemeProvider>
-      <DataProvider>
-        <TabsLayout />
-      </DataProvider>
-    </ThemeProvider>
+    <LanguageProvider>
+      {showSplash ? (
+        <Splash onDone={() => setShowSplash(false)} />
+      ) : (
+        <ThemeProvider>
+          <LockProvider>
+            <DataProvider>
+              <TabsLayout />
+            </DataProvider>
+          </LockProvider>
+        </ThemeProvider>
+      )}
+    </LanguageProvider>
   );
 }
 

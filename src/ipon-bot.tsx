@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { useTheme } from "./app-theme";
+import { useI18n } from "./i18n";
 import { useData, Entry, categoryOf } from "./app-data";
 
 export const dayKey = (d: Date) =>
@@ -54,6 +55,7 @@ export function computeStreak(entries: Entry[]) {
 }
 
 function useTips(): string[] {
+  const { t } = useI18n();
   const { entries, goals, goalSaved, budget, monthSpent, monthEntries, isCurrentMonth } =
     useData();
   const tips: string[] = [];
@@ -65,15 +67,22 @@ function useTips(): string[] {
     const used = monthSpent / budgetNum;
     if (remaining < 0) {
       tips.push(
-        `Naku! You're over budget by ₱${Math.abs(remaining).toLocaleString()} this month. Try holding off on non-essentials. 😅`
+        t(
+          "Naku! You're over budget by ₱{n} this month. Try holding off on non-essentials. 😅",
+          { n: Math.abs(remaining).toLocaleString() }
+        )
       );
     } else if (used >= 0.8) {
       tips.push(
-        `Heads up! You've used ${Math.round(used * 100)}% of your budget. Slow down on gastos! 🐢`
+        t("Heads up! You've used {p}% of your budget. Slow down on gastos! 🐢", {
+          p: Math.round(used * 100),
+        })
       );
     } else if (monthSpent > 0) {
       tips.push(
-        `You've used ${Math.round(used * 100)}% of your budget so far. Keep it up! 💪`
+        t("You've used {p}% of your budget so far. Keep it up! 💪", {
+          p: Math.round(used * 100),
+        })
       );
     }
   }
@@ -84,10 +93,13 @@ function useTips(): string[] {
     const done = goalSaved(g.id);
     const left = g.target - done;
     if (left <= 0) {
-      tips.push(`Congrats! You reached your ${g.name} goal! 🎉`);
+      tips.push(t("Congrats! You reached your {name} goal! 🎉", { name: g.name }));
     } else if (done / g.target >= 0.8) {
       tips.push(
-        `Only ₱${left.toLocaleString()} to go for your ${g.name}! Almost there! 🚀`
+        t("Only ₱{n} to go for your {name}! Almost there! 🚀", {
+          n: left.toLocaleString(),
+          name: g.name,
+        })
       );
     }
   });
@@ -95,13 +107,15 @@ function useTips(): string[] {
   // Streak tips
   const streak = computeStreak(entries);
   if (streak.current >= 3) {
-    tips.push(`🔥 ${streak.current}-day ipon streak! Don't break it!`);
+    tips.push(t("🔥 {n}-day ipon streak! Don't break it!", { n: streak.current }));
   }
   if (!streak.today) {
     tips.push(
       streak.current > 0
-        ? `Wala ka pang ipon today. Save even ₱10 to keep your ${streak.current}-day streak!`
-        : "Wala pang ipon today. Even ₱10 counts! 💰"
+        ? t("Wala ka pang ipon today. Save even ₱10 to keep your {n}-day streak!", {
+            n: streak.current,
+          })
+        : t("Wala pang ipon today. Even ₱10 counts! 💰")
     );
   }
 
@@ -124,22 +138,26 @@ function useTips(): string[] {
     const pct = Math.round((topVal / monthSpent) * 100);
     if (pct >= 50) {
       tips.push(
-        `Most of your gastos (${pct}%) goes to ${categoryOf(topKey).label}. Maybe set a limit?`
+        t("Most of your gastos ({p}%) goes to {cat}. Maybe set a limit?", {
+          p: pct,
+          cat: t(categoryOf(topKey).label),
+        })
       );
     }
   }
 
   // Always-available tips
   if (entries.length === 0) {
-    tips.push("Hi! I'm Ipon Bot 🤖 Add your ipon and gastos and I'll give you tips.");
+    tips.push(t("Hi! I'm Ipon Bot 🤖 Add your ipon and gastos and I'll give you tips."));
   }
-  tips.push("Tip: Save first, then spend what's left. 😉");
+  tips.push(t("Tip: Save first, then spend what's left. 😉"));
 
   return tips;
 }
 
 export function BotTip() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const tips = useTips();
   const [i, setI] = useState(0);
   const idx = i % tips.length;
@@ -159,7 +177,7 @@ export function BotTip() {
       >
         <Text style={{ color: colors.text, fontSize: 14 }}>{tips[idx]}</Text>
         <Text style={{ color: colors.subtext, fontSize: 11, marginTop: 6 }}>
-          Tap for another tip ({idx + 1}/{tips.length})
+          {t("Tap for another tip ({i}/{n})", { i: idx + 1, n: tips.length })}
         </Text>
       </View>
     </Pressable>
