@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, Switch, Pressable, Modal, Alert, StyleSheet } from "react-native";
 import { useTheme, Colors } from "./app-theme";
+import { useI18n } from "./i18n";
 import { useLock } from "./app-lock";
 import { PinDots, PinPad, PIN_LENGTH } from "./pin-pad";
 
@@ -9,6 +10,7 @@ type Step = "current" | "new" | "confirm";
 
 export function SecurityCard() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const {
     hasPin,
     biometricAvailable,
@@ -44,7 +46,7 @@ export function SecurityCard() {
   const process = async (code: string) => {
     if (step === "current") {
       if (!checkPin(code)) {
-        setError("Wrong PIN. Try again.");
+        setError(t("Wrong PIN. Try again."));
         setEntered("");
         return;
       }
@@ -52,7 +54,7 @@ export function SecurityCard() {
       if (flow === "remove") {
         await removePin();
         close();
-        Alert.alert("PIN lock is off");
+        Alert.alert(t("PIN lock is off"));
       } else {
         setStep("new");
         setEntered("");
@@ -70,7 +72,7 @@ export function SecurityCard() {
 
     // confirm
     if (code !== firstPin) {
-      setError("PINs don't match. Start again.");
+      setError(t("PINs don't match. Start again."));
       setStep("new");
       setFirstPin("");
       setEntered("");
@@ -78,7 +80,7 @@ export function SecurityCard() {
     }
     await setPin(code);
     close();
-    Alert.alert("PIN saved", "The app will ask for it next time you open it.");
+    Alert.alert(t("PIN saved"), t("The app will ask for it next time you open it."));
   };
 
   const onDigit = (d: string) => {
@@ -93,20 +95,20 @@ export function SecurityCard() {
 
   const heading =
     step === "current"
-      ? "Enter your current PIN"
+      ? t("Enter your current PIN")
       : step === "new"
-      ? "Enter a new 4-digit PIN"
-      : "Enter the PIN again to confirm";
+      ? t("Enter a new 4-digit PIN")
+      : t("Enter the PIN again to confirm");
 
   return (
     <View style={s.card}>
-      <Text style={s.title}>Security</Text>
+      <Text style={s.title}>{t("Security")}</Text>
 
       <View style={s.row}>
         <View style={{ flex: 1 }}>
-          <Text style={s.label}>PIN lock</Text>
+          <Text style={s.label}>{t("PIN lock")}</Text>
           <Text style={s.small}>
-            Asks for your PIN when you open the app and after 30 seconds away.
+            {t("Asks for your PIN when you open the app and after 30 seconds away.")}
           </Text>
         </View>
         <Switch
@@ -118,15 +120,15 @@ export function SecurityCard() {
 
       {hasPin && (
         <Pressable style={s.linkBtn} onPress={() => start("change")}>
-          <Text style={s.linkText}>Change PIN</Text>
+          <Text style={s.linkText}>{t("Change PIN")}</Text>
         </Pressable>
       )}
 
       {hasPin && biometricAvailable && (
         <View style={[s.row, { marginTop: 12 }]}>
           <View style={{ flex: 1 }}>
-            <Text style={s.label}>Unlock with fingerprint</Text>
-            <Text style={s.small}>You can always use your PIN instead.</Text>
+            <Text style={s.label}>{t("Unlock with fingerprint")}</Text>
+            <Text style={s.small}>{t("You can always use your PIN instead.")}</Text>
           </View>
           <Switch
             value={biometricEnabled}
@@ -137,18 +139,19 @@ export function SecurityCard() {
       )}
 
       <Text style={[s.small, { marginTop: 12 }]}>
-        ⚠️ If you forget your PIN, the only way back in is to clear the app's data,
-        which also erases your entries. Make a CSV backup in Export & share first.
+        {t(
+          "⚠️ If you forget your PIN, the only way back in is to clear the app's data, which also erases your entries. Make a CSV backup in Export & share first."
+        )}
       </Text>
 
       <Modal visible={flow !== null} animationType="slide" onRequestClose={close}>
         <View style={s.modal}>
           <Text style={s.modalTitle}>
             {flow === "set"
-              ? "Set a PIN"
+              ? t("Set a PIN")
               : flow === "change"
-              ? "Change PIN"
-              : "Turn off PIN lock"}
+              ? t("Change PIN")
+              : t("Turn off PIN lock")}
           </Text>
           <Text style={{ color: error ? colors.red : colors.subtext }}>
             {error || heading}
@@ -158,7 +161,7 @@ export function SecurityCard() {
           <PinPad onDigit={onDigit} onDelete={onDelete} />
 
           <Pressable onPress={close} style={{ marginTop: 12, padding: 10 }}>
-            <Text style={{ color: colors.subtext, fontSize: 16 }}>Cancel</Text>
+            <Text style={{ color: colors.subtext, fontSize: 16 }}>{t("Cancel")}</Text>
           </Pressable>
         </View>
       </Modal>

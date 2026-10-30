@@ -10,6 +10,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useTheme, Colors } from "./app-theme";
+import { useI18n } from "./i18n";
 import { useData, CATEGORIES, NewDebt } from "./app-data";
 import { WalletPicker } from "./wallet-picker";
 
@@ -20,6 +21,7 @@ const money = (n: number) => `₱${round2(n).toLocaleString()}`;
 
 export function Ambagan() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const { addDebts, addEntry, wallets } = useData();
   const s = makeStyles(colors);
 
@@ -46,7 +48,8 @@ export function Ambagan() {
     next[i] = v;
     setNames(next);
   };
-  const friendName = (i: number) => names[i]?.trim() || `Friend ${i + 1}`;
+  const friendName = (i: number) =>
+    names[i]?.trim() || t("Friend {n}", { n: i + 1 });
 
   const reset = () => {
     setTotal("");
@@ -57,7 +60,7 @@ export function Ambagan() {
 
   const handleSave = () => {
     if (totalNum <= 0) {
-      Alert.alert("Enter the total bill first.");
+      Alert.alert(t("Enter the total bill first."));
       return;
     }
     const label = note.trim() || "Ambagan";
@@ -74,21 +77,30 @@ export function Ambagan() {
         addEntry("gastos", myShare, label, category, activeWallet);
       }
       Alert.alert(
-        "Saved!",
-        `Added ${people - 1} utang entries of ${money(each)} each${
-          recordMine ? ` and your share of ${money(myShare)} as an expense` : ""
-        }.`
+        t("Saved!"),
+        recordMine
+          ? t(
+              "Added {n} utang entries of {amt} each and your share of {share} as an expense.",
+              { n: people - 1, amt: money(each), share: money(myShare) }
+            )
+          : t("Added {n} utang entries of {amt} each.", {
+              n: people - 1,
+              amt: money(each),
+            })
       );
     } else {
       const who = payer.trim();
       if (!who) {
-        Alert.alert("Who paid?", "Enter the name of the person who paid.");
+        Alert.alert(t("Who paid?"), t("Enter the name of the person who paid."));
         return;
       }
       addDebts([
         { person: who, amount: each, direction: "owe", note: `Ambagan: ${label}` },
       ]);
-      Alert.alert("Saved!", `Added ${money(each)} to what you owe ${who}.`);
+      Alert.alert(
+        t("Saved!"),
+        t("Added {amt} to what you owe {name}.", { amt: money(each), name: who })
+      );
     }
     reset();
   };
@@ -108,7 +120,7 @@ export function Ambagan() {
             style={[s.chip, mode === m && s.chipActive]}
           >
             <Text style={[s.chipText, mode === m && s.chipTextActive]}>
-              {m === "me" ? "I paid" : "A friend paid"}
+              {m === "me" ? t("I paid") : t("A friend paid")}
             </Text>
           </Pressable>
         ))}
@@ -116,7 +128,7 @@ export function Ambagan() {
 
       <TextInput
         style={s.input}
-        placeholder="Total bill (₱)"
+        placeholder={t("Total bill (₱)")}
         placeholderTextColor={colors.subtext}
         value={total}
         onChangeText={setTotal}
@@ -124,14 +136,14 @@ export function Ambagan() {
       />
       <TextInput
         style={s.input}
-        placeholder="What was it for? (e.g. Samgyup)"
+        placeholder={t("What was it for? (e.g. Samgyup)")}
         placeholderTextColor={colors.subtext}
         value={note}
         onChangeText={setNote}
       />
 
       {/* People stepper */}
-      <Text style={s.label}>How many people (including you)?</Text>
+      <Text style={s.label}>{t("How many people (including you)?")}</Text>
       <View style={s.stepper}>
         <Pressable
           style={s.stepBtn}
@@ -152,16 +164,16 @@ export function Ambagan() {
       <View style={s.card}>
         {mode === "me" ? (
           <>
-            <Text style={s.label}>Each friend pays</Text>
+            <Text style={s.label}>{t("Each friend pays")}</Text>
             <Text style={s.big}>{money(each)}</Text>
-            <Text style={s.small}>Your share: {money(myShare)}</Text>
+            <Text style={s.small}>{t("Your share: {n}", { n: money(myShare) })}</Text>
           </>
         ) : (
           <>
-            <Text style={s.label}>Your share</Text>
+            <Text style={s.label}>{t("Your share")}</Text>
             <Text style={s.big}>{money(each)}</Text>
             <Text style={s.small}>
-              This is added to what you owe the friend who paid.
+              {t("This is added to what you owe the friend who paid.")}
             </Text>
           </>
         )}
@@ -169,12 +181,12 @@ export function Ambagan() {
 
       {mode === "me" ? (
         <>
-          <Text style={s.label}>Friends (names are optional)</Text>
+          <Text style={s.label}>{t("Friends (names are optional)")}</Text>
           {Array.from({ length: people - 1 }, (_, i) => (
             <TextInput
               key={i}
               style={s.input}
-              placeholder={`Friend ${i + 1} name`}
+              placeholder={t("Friend {n} name", { n: i + 1 })}
               placeholderTextColor={colors.subtext}
               value={names[i] ?? ""}
               onChangeText={(v) => setName(i, v)}
@@ -183,8 +195,8 @@ export function Ambagan() {
 
           <View style={s.switchRow}>
             <View style={{ flex: 1 }}>
-              <Text style={s.title}>Record my share as an expense</Text>
-              <Text style={s.small}>Counts in your budget and wallet.</Text>
+              <Text style={s.title}>{t("Record my share as an expense")}</Text>
+              <Text style={s.small}>{t("Counts in your budget and wallet.")}</Text>
             </View>
             <Switch
               value={recordMine}
@@ -195,7 +207,7 @@ export function Ambagan() {
 
           {recordMine && (
             <>
-              <Text style={s.label}>Category</Text>
+              <Text style={s.label}>{t("Category")}</Text>
               <View style={s.chips}>
                 {CATEGORIES.map((c) => (
                   <Pressable
@@ -206,7 +218,7 @@ export function Ambagan() {
                     <Text
                       style={[s.chipText, category === c.key && s.chipTextActive]}
                     >
-                      {c.emoji} {c.label}
+                      {c.emoji} {t(c.label)}
                     </Text>
                   </Pressable>
                 ))}
@@ -218,7 +230,7 @@ export function Ambagan() {
       ) : (
         <TextInput
           style={s.input}
-          placeholder="Who paid? (name)"
+          placeholder={t("Who paid? (name)")}
           placeholderTextColor={colors.subtext}
           value={payer}
           onChangeText={setPayer}
@@ -227,7 +239,7 @@ export function Ambagan() {
 
       <Pressable style={s.button} onPress={handleSave}>
         <Text style={s.buttonText}>
-          {mode === "me" ? "Save and add to utang" : "Add to what I owe"}
+          {mode === "me" ? t("Save and add to utang") : t("Add to what I owe")}
         </Text>
       </Pressable>
     </ScrollView>
