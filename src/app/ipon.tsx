@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import { useData, GOAL_EMOJIS, DEFAULT_GOAL_ID, Goal } from "../app-data";
 import { WalletPicker } from "../wallet-picker";
 
 export default function Ipon() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const {
     entries,
     addEntry,
@@ -82,15 +84,15 @@ export default function Ipon() {
 
   const confirmDeleteGoal = (g: Goal) => {
     if (goals.length <= 1) {
-      Alert.alert("Can't delete", "You need at least one goal.");
+      Alert.alert(t("Can't delete"), t("You need at least one goal."));
       return;
     }
     Alert.alert(
-      `Delete "${g.name}"?`,
-      "Your ipon entries stay in History, but they won't count toward any goal.",
+      t('Delete "{name}"?', { name: g.name }),
+      t("Your ipon entries stay in History, but they won't count toward any goal."),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteGoal(g.id) },
+        { text: t("Cancel"), style: "cancel" },
+        { text: t("Delete"), style: "destructive", onPress: () => deleteGoal(g.id) },
       ]
     );
   };
@@ -102,13 +104,15 @@ export default function Ipon() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={s.sectionRow}>
-        <Text style={s.section}>My goals</Text>
+        <Text style={s.section}>{t("My goals")}</Text>
         <Pressable onPress={openNew} style={s.newBtn}>
           <Ionicons name="add" size={18} color="#fff" />
-          <Text style={s.newBtnText}>New goal</Text>
+          <Text style={s.newBtnText}>{t("New goal")}</Text>
         </Pressable>
       </View>
-      <Text style={s.small}>Tap a goal to choose where your next ipon goes.</Text>
+      <Text style={s.small}>
+        {t("Tap a goal to choose where your next ipon goes.")}
+      </Text>
 
       {goals.map((g) => {
         const done = goalSaved(g.id);
@@ -142,25 +146,27 @@ export default function Ipon() {
               <View style={[s.barFill, { width: `${pct * 100}%` }]} />
             </View>
             <Text style={s.small}>
-              {Math.round(pct * 100)}%
               {reached
-                ? " · Goal reached! 🎉"
-                : ` · ₱${Math.max(g.target - done, 0).toLocaleString()} to go`}
+                ? `${Math.round(pct * 100)}% · ${t("Goal reached! 🎉")}`
+                : t("{p}% · ₱{n} to go", {
+                    p: Math.round(pct * 100),
+                    n: Math.max(g.target - done, 0).toLocaleString(),
+                  })}
             </Text>
           </Pressable>
         );
       })}
 
-      <Text style={[s.section, { marginTop: 16 }]}>Add ipon</Text>
+      <Text style={[s.section, { marginTop: 16 }]}>{t("Add ipon")}</Text>
       {selected && (
         <Text style={s.small}>
-          Adding to: {selected.emoji} {selected.name}
+          {t("Adding to:")} {selected.emoji} {selected.name}
         </Text>
       )}
       <WalletPicker value={activeWallet} onChange={setWalletId} />
       <TextInput
         style={s.input}
-        placeholder="Amount"
+        placeholder={t("Amount")}
         placeholderTextColor={colors.subtext}
         value={amount}
         onChangeText={setAmount}
@@ -168,18 +174,18 @@ export default function Ipon() {
       />
       <TextInput
         style={s.input}
-        placeholder="Note (optional)"
+        placeholder={t("Note (optional)")}
         placeholderTextColor={colors.subtext}
         value={note}
         onChangeText={setNote}
       />
       <Pressable style={s.button} onPress={handleAdd}>
-        <Text style={s.buttonText}>Add ipon</Text>
+        <Text style={s.buttonText}>{t("Add ipon")}</Text>
       </Pressable>
 
-      <Text style={s.section}>Recent</Text>
+      <Text style={s.section}>{t("Recent")}</Text>
       {recent.length === 0 ? (
-        <Text style={s.small}>No ipon yet. Add your first one!</Text>
+        <Text style={s.small}>{t("No ipon yet. Add your first one!")}</Text>
       ) : (
         recent.map((item) => {
           const g = goals.find((x) => x.id === (item.goalId ?? DEFAULT_GOAL_ID));
@@ -193,7 +199,7 @@ export default function Ipon() {
           );
         })
       )}
-      <Text style={s.small}>See everything in the History tab.</Text>
+      <Text style={s.small}>{t("See everything in the History tab.")}</Text>
 
       {/* Goal modal */}
       <Modal
@@ -204,18 +210,20 @@ export default function Ipon() {
       >
         <View style={s.overlay}>
           <View style={s.modal}>
-            <Text style={s.modalTitle}>{editingId ? "Edit goal" : "New goal"}</Text>
+            <Text style={s.modalTitle}>
+              {editingId ? t("Edit goal") : t("New goal")}
+            </Text>
 
             <TextInput
               style={s.input}
-              placeholder="Goal name (e.g. Laptop)"
+              placeholder={t("Goal name (e.g. Laptop)")}
               placeholderTextColor={colors.subtext}
               value={gName}
               onChangeText={setGName}
             />
             <TextInput
               style={s.input}
-              placeholder="Target amount (₱)"
+              placeholder={t("Target amount (₱)")}
               placeholderTextColor={colors.subtext}
               value={gTarget}
               onChangeText={setGTarget}
@@ -239,13 +247,15 @@ export default function Ipon() {
                 style={[s.modalBtn, { backgroundColor: colors.barBg }]}
                 onPress={() => setModalOpen(false)}
               >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>Cancel</Text>
+                <Text style={{ color: colors.text, fontWeight: "600" }}>
+                  {t("Cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 style={[s.modalBtn, { backgroundColor: colors.green }]}
                 onPress={saveGoal}
               >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Save</Text>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
               </Pressable>
             </View>
           </View>

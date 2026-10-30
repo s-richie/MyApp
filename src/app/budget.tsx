@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import { useData, CATEGORIES, categoryOf } from "../app-data";
 import { MonthPicker } from "../month-picker";
 import { WalletPicker } from "../wallet-picker";
 
 export default function Budget() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const { monthEntries, addEntry, budget, setBudget, monthSpent, wallets } = useData();
   const spent = monthSpent;
   const s = makeStyles(colors);
@@ -36,16 +38,16 @@ export default function Budget() {
     >
       <MonthPicker />
 
-      <Text style={s.label}>Monthly budget (₱)</Text>
+      <Text style={s.label}>{t("Monthly budget (₱)")}</Text>
       <TextInput style={s.input} value={budget} onChangeText={setBudget} keyboardType="numeric" />
 
-      <Text style={s.label}>Remaining</Text>
+      <Text style={s.label}>{t("Remaining")}</Text>
       <Text style={[s.big, remaining < 0 && { color: colors.red }]}>
         ₱{remaining.toLocaleString()}
       </Text>
-      <Text style={s.small}>Spent: ₱{spent.toLocaleString()}</Text>
+      <Text style={s.small}>{t("Spent: ₱{n}", { n: spent.toLocaleString() })}</Text>
 
-      <Text style={s.label}>Category</Text>
+      <Text style={s.label}>{t("Category")}</Text>
       <View style={s.chips}>
         {CATEGORIES.map((c) => (
           <Pressable
@@ -54,7 +56,7 @@ export default function Budget() {
             style={[s.chip, category === c.key && s.chipActive]}
           >
             <Text style={[s.chipText, category === c.key && s.chipTextActive]}>
-              {c.emoji} {c.label}
+              {c.emoji} {t(c.label)}
             </Text>
           </Pressable>
         ))}
@@ -64,7 +66,7 @@ export default function Budget() {
 
       <TextInput
         style={s.input}
-        placeholder="Amount"
+        placeholder={t("Amount")}
         placeholderTextColor={colors.subtext}
         value={amount}
         onChangeText={setAmount}
@@ -72,32 +74,32 @@ export default function Budget() {
       />
       <TextInput
         style={s.input}
-        placeholder="Note (optional)"
+        placeholder={t("Note (optional)")}
         placeholderTextColor={colors.subtext}
         value={note}
         onChangeText={setNote}
       />
       <Pressable style={s.button} onPress={handleAdd}>
-        <Text style={s.buttonText}>Add gastos</Text>
+        <Text style={s.buttonText}>{t("Add gastos")}</Text>
       </Pressable>
 
-      <Text style={s.section}>Recent</Text>
+      <Text style={s.section}>{t("Recent")}</Text>
       {recent.length === 0 ? (
-        <Text style={s.small}>No expenses this month yet.</Text>
+        <Text style={s.small}>{t("No expenses this month yet.")}</Text>
       ) : (
         recent.map((item) => {
           const cat = categoryOf(item.category);
           return (
             <View key={item.id} style={s.row}>
               <Text style={s.rowText}>
-                {cat.emoji} {item.note || cat.label}
+                {cat.emoji} {item.note || t(cat.label)}
               </Text>
               <Text style={s.amount}>-₱{item.amount.toLocaleString()}</Text>
             </View>
           );
         })
       )}
-      <Text style={s.small}>See everything in the History tab.</Text>
+      <Text style={s.small}>{t("See everything in the History tab.")}</Text>
     </ScrollView>
   );
 }

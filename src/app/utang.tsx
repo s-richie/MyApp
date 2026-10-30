@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import { useData, Debt, Direction } from "../app-data";
 import { Ambagan } from "../ambagan";
 
@@ -22,6 +23,7 @@ const remainingOf = (d: Debt) => Math.max(round2(d.amount - d.paid), 0);
 
 export default function Utang() {
   const { colors } = useTheme();
+  const { t, fdate } = useI18n();
   const { debts, addDebt, recordPayment, deleteDebt } = useData();
   const s = makeStyles(colors);
 
@@ -52,9 +54,6 @@ export default function Utang() {
       (a, b) =>
         (remainingOf(a) === 0 ? 1 : 0) - (remainingOf(b) === 0 ? 1 : 0)
     );
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   const openNew = () => {
     setPerson("");
@@ -92,9 +91,9 @@ export default function Utang() {
   };
 
   const confirmDelete = (d: Debt) => {
-    Alert.alert(`Delete utang with ${d.person}?`, "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteDebt(d.id) },
+    Alert.alert(t("Delete utang with {name}?", { name: d.person }), t("This can't be undone."), [
+      { text: t("Cancel"), style: "cancel" },
+      { text: t("Delete"), style: "destructive", onPress: () => deleteDebt(d.id) },
     ]);
   };
 
@@ -102,14 +101,14 @@ export default function Utang() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Segmented control */}
       <View style={s.segment}>
-        {(["utang", "ambagan"] as Tab[]).map((t) => (
+        {(["utang", "ambagan"] as Tab[]).map((k) => (
           <Pressable
-            key={t}
-            onPress={() => setTab(t)}
-            style={[s.segBtn, tab === t && s.segBtnActive]}
+            key={k}
+            onPress={() => setTab(k)}
+            style={[s.segBtn, tab === k && s.segBtnActive]}
           >
-            <Text style={[s.segText, tab === t && s.segTextActive]}>
-              {t === "utang" ? "💸 Utang" : "🍕 Ambagan"}
+            <Text style={[s.segText, tab === k && s.segTextActive]}>
+              {k === "utang" ? "💸 Utang" : "🍕 Ambagan"}
             </Text>
           </Pressable>
         ))}
@@ -122,11 +121,11 @@ export default function Utang() {
           {/* Totals */}
           <View style={s.statsRow}>
             <View style={[s.card, { flex: 1 }]}>
-              <Text style={s.label}>They owe me</Text>
+              <Text style={s.label}>{t("They owe me")}</Text>
               <Text style={[s.stat, { color: colors.green }]}>{money(owedTotal)}</Text>
             </View>
             <View style={[s.card, { flex: 1 }]}>
-              <Text style={s.label}>I owe</Text>
+              <Text style={s.label}>{t("I owe")}</Text>
               <Text style={[s.stat, { color: colors.red }]}>{money(oweTotal)}</Text>
             </View>
           </View>
@@ -141,22 +140,22 @@ export default function Utang() {
                   style={[s.chip, filter === d && s.chipActive]}
                 >
                   <Text style={[s.chipText, filter === d && s.chipTextActive]}>
-                    {d === "owed" ? "Owed to me" : "I owe"}
+                    {d === "owed" ? t("Owed to me") : t("I owe")}
                   </Text>
                 </Pressable>
               ))}
             </View>
             <Pressable onPress={openNew} style={s.newBtn}>
               <Ionicons name="add" size={18} color="#fff" />
-              <Text style={s.newBtnText}>New</Text>
+              <Text style={s.newBtnText}>{t("New")}</Text>
             </Pressable>
           </View>
 
           {list.length === 0 ? (
             <Text style={s.empty}>
               {filter === "owed"
-                ? "Nobody owes you anything. 🎉"
-                : "You don't owe anyone. 🙌"}
+                ? t("Nobody owes you anything. 🎉")
+                : t("You don't owe anyone. 🙌")}
             </Text>
           ) : (
             list.map((d) => {
@@ -174,7 +173,7 @@ export default function Utang() {
                       </Text>
                       <Text style={s.small}>
                         {d.note ? `${d.note} • ` : ""}
-                        {formatDate(d.date)}
+                        {fdate(d.date)}
                       </Text>
                     </View>
                     <Pressable onPress={() => confirmDelete(d)} hitSlop={10}>
@@ -183,8 +182,10 @@ export default function Utang() {
                   </View>
 
                   <Text style={[s.amount, { color: tone }]}>
-                    {done ? "Paid ✅" : money(rem)}{" "}
-                    <Text style={s.small}>of {money(d.amount)}</Text>
+                    {done ? t("Paid ✅") : money(rem)}{" "}
+                    <Text style={s.small}>
+                      {t("of ₱{n}", { n: round2(d.amount).toLocaleString() })}
+                    </Text>
                   </Text>
 
                   <View style={s.barBg}>
@@ -196,7 +197,9 @@ export default function Utang() {
                   {!done && (
                     <Pressable style={s.payBtn} onPress={() => openPay(d)}>
                       <Text style={s.payBtnText}>
-                        {isOwed ? "Record payment received" : "Record payment I made"}
+                        {isOwed
+                          ? t("Record payment received")
+                          : t("Record payment I made")}
                       </Text>
                     </Pressable>
                   )}
@@ -216,7 +219,7 @@ export default function Utang() {
       >
         <View style={s.overlay}>
           <View style={s.modal}>
-            <Text style={s.modalTitle}>New utang</Text>
+            <Text style={s.modalTitle}>{t("New utang")}</Text>
 
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 6 }}>
               {(["owed", "owe"] as Direction[]).map((d) => (
@@ -226,7 +229,7 @@ export default function Utang() {
                   style={[s.chip, direction === d && s.chipActive]}
                 >
                   <Text style={[s.chipText, direction === d && s.chipTextActive]}>
-                    {d === "owed" ? "They owe me" : "I owe them"}
+                    {d === "owed" ? t("They owe me") : t("I owe them")}
                   </Text>
                 </Pressable>
               ))}
@@ -234,14 +237,14 @@ export default function Utang() {
 
             <TextInput
               style={s.input}
-              placeholder="Person's name"
+              placeholder={t("Person's name")}
               placeholderTextColor={colors.subtext}
               value={person}
               onChangeText={setPerson}
             />
             <TextInput
               style={s.input}
-              placeholder="Amount (₱)"
+              placeholder={t("Amount (₱)")}
               placeholderTextColor={colors.subtext}
               value={amount}
               onChangeText={setAmount}
@@ -249,7 +252,7 @@ export default function Utang() {
             />
             <TextInput
               style={s.input}
-              placeholder="Note (optional)"
+              placeholder={t("Note (optional)")}
               placeholderTextColor={colors.subtext}
               value={note}
               onChangeText={setNote}
@@ -260,13 +263,15 @@ export default function Utang() {
                 style={[s.modalBtn, { backgroundColor: colors.barBg }]}
                 onPress={() => setNewOpen(false)}
               >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>Cancel</Text>
+                <Text style={{ color: colors.text, fontWeight: "600" }}>
+                  {t("Cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 style={[s.modalBtn, { backgroundColor: colors.green }]}
                 onPress={saveNew}
               >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Save</Text>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
               </Pressable>
             </View>
           </View>
@@ -283,15 +288,20 @@ export default function Utang() {
         <View style={s.overlay}>
           <View style={s.modal}>
             <Text style={s.modalTitle}>
-              {paying?.direction === "owed" ? "Payment received" : "Payment made"}
+              {paying?.direction === "owed" ? t("Payment received") : t("Payment made")}
             </Text>
             <Text style={s.small}>
-              {paying?.person} • remaining {paying ? money(remainingOf(paying)) : ""}
+              {paying
+                ? t("{name} • remaining {n}", {
+                    name: paying.person,
+                    n: money(remainingOf(paying)),
+                  })
+                : ""}
             </Text>
 
             <TextInput
               style={s.input}
-              placeholder="Amount (₱)"
+              placeholder={t("Amount (₱)")}
               placeholderTextColor={colors.subtext}
               value={payAmount}
               onChangeText={setPayAmount}
@@ -302,7 +312,9 @@ export default function Utang() {
               style={[s.modalBtn, { backgroundColor: colors.blue, marginTop: 8 }]}
               onPress={markPaid}
             >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>Mark fully paid</Text>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                {t("Mark fully paid")}
+              </Text>
             </Pressable>
 
             <View style={s.modalButtons}>
@@ -310,13 +322,15 @@ export default function Utang() {
                 style={[s.modalBtn, { backgroundColor: colors.barBg }]}
                 onPress={() => setPaying(null)}
               >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>Cancel</Text>
+                <Text style={{ color: colors.text, fontWeight: "600" }}>
+                  {t("Cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 style={[s.modalBtn, { backgroundColor: colors.green }]}
                 onPress={savePay}
               >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Save</Text>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
               </Pressable>
             </View>
           </View>

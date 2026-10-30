@@ -11,6 +11,7 @@ import * as SecureStore from "expo-secure-store";
 import * as LocalAuthentication from "expo-local-authentication";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "./app-theme";
+import { useI18n } from "./i18n";
 import { PinDots, PinPad, PIN_LENGTH } from "./pin-pad";
 
 const PIN_KEY = "iponbot_pin";
@@ -38,6 +39,7 @@ export function useLock() {
 }
 
 export function LockProvider({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   const [loaded, setLoaded] = useState(false);
   const [pin, setPinState] = useState<string | null>(null);
   const [biometricEnabled, setBioEnabled] = useState(false);
@@ -111,8 +113,8 @@ export function LockProvider({ children }: { children: ReactNode }) {
     authenticating.current = true;
     try {
       const res = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Unlock Ipon Bot",
-        cancelLabel: "Use PIN",
+        promptMessage: t("Unlock Ipon Bot"),
+        cancelLabel: t("Use PIN"),
         disableDeviceFallback: true,
       });
       if (res.success) setLocked(false);
@@ -165,6 +167,7 @@ function LockScreen({
   onUnlock: () => void;
 }) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const [entered, setEntered] = useState("");
   const [error, setError] = useState(false);
   const [attempts, setAttempts] = useState(0);
@@ -231,10 +234,10 @@ function LockScreen({
       <Text style={[s.title, { color: colors.text }]}>Ipon Bot</Text>
       <Text style={{ color: error || waiting ? colors.red : colors.subtext }}>
         {waiting
-          ? `Too many tries. Wait ${secondsLeft}s`
+          ? t("Too many tries. Wait {s}s", { s: secondsLeft })
           : error
-          ? "Wrong PIN. Try again."
-          : "Enter your PIN"}
+          ? t("Wrong PIN. Try again.")
+          : t("Enter your PIN")}
       </Text>
 
       <PinDots count={entered.length} error={error} />

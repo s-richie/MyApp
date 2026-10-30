@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import {
   useData,
   Kind,
@@ -33,6 +34,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 
 export default function History() {
   const { colors } = useTheme();
+  const { t, fdate } = useI18n();
   const { monthEntries, deleteEntry, updateEntry, goals, wallets } = useData();
   const s = makeStyles(colors);
 
@@ -53,7 +55,7 @@ export default function History() {
     wallets.find((w) => w.id === (e.walletId ?? DEFAULT_WALLET_ID)) ?? wallets[0];
 
   const labelOf = (e: Entry) =>
-    e.kind === "gastos" ? categoryOf(e.category).label : goalOf(e)?.name ?? "Ipon";
+    e.kind === "gastos" ? t(categoryOf(e.category).label) : goalOf(e)?.name ?? "Ipon";
 
   const q = search.trim().toLowerCase();
   const shown = monthEntries.filter((e) => {
@@ -65,9 +67,9 @@ export default function History() {
   });
 
   const confirmDelete = (id: string) => {
-    Alert.alert("Delete entry?", "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteEntry(id) },
+    Alert.alert(t("Delete entry?"), t("This can't be undone."), [
+      { text: t("Cancel"), style: "cancel" },
+      { text: t("Delete"), style: "destructive", onPress: () => deleteEntry(id) },
     ]);
   };
 
@@ -92,20 +94,13 @@ export default function History() {
     setEditing(null);
   };
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-
   return (
     <View style={s.container}>
       <MonthPicker />
 
       <TextInput
         style={s.search}
-        placeholder="Search note, category, wallet or amount"
+        placeholder={t("Search note, category, wallet or amount")}
         placeholderTextColor={colors.subtext}
         value={search}
         onChangeText={setSearch}
@@ -119,13 +114,13 @@ export default function History() {
             style={[s.chip, filter === f.key && s.chipActive]}
           >
             <Text style={[s.chipText, filter === f.key && s.chipTextActive]}>
-              {f.label}
+              {t(f.label)}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={s.hint}>Tap an entry to edit it.</Text>
+      <Text style={s.hint}>{t("Tap an entry to edit it.")}</Text>
 
       <FlatList
         data={shown}
@@ -133,7 +128,7 @@ export default function History() {
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <Text style={s.empty}>
-            {q ? "No matches found." : "Nothing here yet."}
+            {q ? t("No matches found.") : t("Nothing here yet.")}
           </Text>
         }
         renderItem={({ item }) => {
@@ -148,7 +143,7 @@ export default function History() {
                 <View style={{ flex: 1 }}>
                   <Text style={s.note}>{item.note || labelOf(item)}</Text>
                   <Text style={s.date}>
-                    {labelOf(item)} • {w?.emoji} {w?.name} • {formatDate(item.date)}
+                    {labelOf(item)} • {w?.emoji} {w?.name} • {fdate(item.date, true)}
                   </Text>
                 </View>
                 <Text
@@ -175,12 +170,12 @@ export default function History() {
         <View style={s.overlay}>
           <View style={s.modal}>
             <Text style={s.modalTitle}>
-              Edit {editing?.kind === "ipon" ? "ipon" : "expense"}
+              {editing?.kind === "ipon" ? t("Edit ipon") : t("Edit expense")}
             </Text>
 
             <TextInput
               style={s.input}
-              placeholder="Amount"
+              placeholder={t("Amount")}
               placeholderTextColor={colors.subtext}
               value={editAmount}
               onChangeText={setEditAmount}
@@ -188,7 +183,7 @@ export default function History() {
             />
             <TextInput
               style={s.input}
-              placeholder="Note (optional)"
+              placeholder={t("Note (optional)")}
               placeholderTextColor={colors.subtext}
               value={editNote}
               onChangeText={setEditNote}
@@ -208,7 +203,7 @@ export default function History() {
                         editCategory === c.key && s.chipTextActive,
                       ]}
                     >
-                      {c.emoji} {c.label}
+                      {c.emoji} {t(c.label)}
                     </Text>
                   </Pressable>
                 ))}
@@ -222,13 +217,15 @@ export default function History() {
                 style={[s.modalBtn, { backgroundColor: colors.barBg }]}
                 onPress={() => setEditing(null)}
               >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>Cancel</Text>
+                <Text style={{ color: colors.text, fontWeight: "600" }}>
+                  {t("Cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 style={[s.modalBtn, { backgroundColor: colors.green }]}
                 onPress={saveEdit}
               >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Save</Text>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
               </Pressable>
             </View>
           </View>
