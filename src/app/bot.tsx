@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import { useData } from "../app-data";
 import { BotTip, computeStreak, dayKey, BADGES } from "../ipon-bot";
 
@@ -13,6 +14,7 @@ type Challenge = {
 
 export default function Bot() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const { entries } = useData();
   const s = makeStyles(colors);
 
@@ -87,6 +89,8 @@ export default function Bot() {
     },
   ];
 
+  const dayWord = (n: number) => t(n === 1 ? "day" : "days");
+
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
@@ -96,35 +100,36 @@ export default function Bot() {
 
       {/* Streak */}
       <View style={s.card}>
-        <Text style={s.label}>Ipon streak</Text>
+        <Text style={s.label}>{t("Ipon streak")}</Text>
         <Text style={s.big}>
-          🔥 {streak.current} {streak.current === 1 ? "day" : "days"}
+          🔥 {streak.current} {dayWord(streak.current)}
         </Text>
         <Text style={s.small}>
-          Best streak: {streak.best} {streak.best === 1 ? "day" : "days"}
-          {streak.today ? " · You saved today! ✅" : " · Save today to keep it going"}
+          {t("Best streak: {n} {d}", { n: streak.best, d: dayWord(streak.best) })}
+          {" · "}
+          {streak.today ? t("You saved today! ✅") : t("Save today to keep it going")}
         </Text>
       </View>
 
       {/* Badges */}
       <View style={s.card}>
-        <Text style={s.label}>Badges</Text>
+        <Text style={s.label}>{t("Badges")}</Text>
         <View style={s.badges}>
           {BADGES.map((b) => {
             const earned = streak.best >= b.days;
             return (
               <View key={b.days} style={[s.badge, { opacity: earned ? 1 : 0.3 }]}>
                 <Text style={{ fontSize: 34 }}>{b.emoji}</Text>
-                <Text style={s.badgeLabel}>{b.label}</Text>
+                <Text style={s.badgeLabel}>{t(b.label)}</Text>
               </View>
             );
           })}
         </View>
-        <Text style={s.small}>Badges unlock from your best ipon streak.</Text>
+        <Text style={s.small}>{t("Badges unlock from your best ipon streak.")}</Text>
       </View>
 
       {/* Challenges */}
-      <Text style={s.section}>Challenges</Text>
+      <Text style={s.section}>{t("Challenges")}</Text>
       {challenges.map((c) => {
         const pct = Math.min(c.value / c.target, 1);
         const done = c.value >= c.target;
@@ -132,12 +137,12 @@ export default function Bot() {
         return (
           <View key={c.title} style={s.card}>
             <View style={s.head}>
-              <Text style={s.title}>{c.title}</Text>
+              <Text style={s.title}>{t(c.title)}</Text>
               <Text style={s.title}>
                 {fmt(Math.min(c.value, c.target))} / {fmt(c.target)}
               </Text>
             </View>
-            <Text style={s.small}>{c.desc}</Text>
+            <Text style={s.small}>{t(c.desc)}</Text>
             <View style={s.barBg}>
               <View
                 style={[
@@ -146,7 +151,11 @@ export default function Bot() {
                 ]}
               />
             </View>
-            {done && <Text style={[s.small, { color: colors.green }]}>Challenge complete! 🎉</Text>}
+            {done && (
+              <Text style={[s.small, { color: colors.green }]}>
+                {t("Challenge complete! 🎉")}
+              </Text>
+            )}
           </View>
         );
       })}

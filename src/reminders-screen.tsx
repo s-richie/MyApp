@@ -12,6 +12,7 @@ import {
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme, Colors } from "./app-theme";
+import { useI18n } from "./i18n";
 
 // Show notifications even while the app is open
 Notifications.setNotificationHandler({
@@ -86,6 +87,7 @@ async function ensurePermission() {
 
 export default function RemindersScreen() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const s = makeStyles(colors);
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
@@ -131,8 +133,8 @@ export default function RemindersScreen() {
         if (!ok) {
           next.on = false;
           Alert.alert(
-            "Notifications are off",
-            "Allow notifications for Expo Go in your phone's settings, then try again."
+            t("Notifications are off"),
+            t("Allow notifications for Expo Go in your phone's settings, then try again.")
           );
         } else {
           next.id = await Notifications.scheduleNotificationAsync({
@@ -153,7 +155,7 @@ export default function RemindersScreen() {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(all));
     } catch (e) {
       console.warn("Reminder error", e);
-      Alert.alert("Could not set the reminder", String(e));
+      Alert.alert(t("Could not set the reminder"), String(e));
     } finally {
       busy.current = false;
     }
@@ -170,8 +172,8 @@ export default function RemindersScreen() {
       const ok = await ensurePermission();
       if (!ok) {
         Alert.alert(
-          "Notifications are off",
-          "Allow notifications for Expo Go in your phone's settings, then try again."
+          t("Notifications are off"),
+          t("Allow notifications for Expo Go in your phone's settings, then try again.")
         );
         return;
       }
@@ -184,12 +186,14 @@ export default function RemindersScreen() {
         },
       });
       Alert.alert(
-        "Test sent",
-        "A notification will show up in 5 seconds. You can also leave the app to see it in the notification bar."
+        t("Test sent"),
+        t(
+          "A notification will show up in 5 seconds. You can also leave the app to see it in the notification bar."
+        )
       );
     } catch (e) {
       console.warn("Test notification error", e);
-      Alert.alert("Could not send the test", String(e));
+      Alert.alert(t("Could not send the test"), String(e));
     }
   };
 
@@ -224,8 +228,9 @@ export default function RemindersScreen() {
       contentContainerStyle={s.container}
     >
       <Text style={s.small}>
-        Reminders are scheduled on your phone, so they work without internet. Android
-        may delay them if battery saver is on.
+        {t(
+          "Reminders are scheduled on your phone, so they work without internet. Android may delay them if battery saver is on."
+        )}
       </Text>
 
       {(["ipon", "gastos"] as Key[]).map((key) => {
@@ -236,10 +241,12 @@ export default function RemindersScreen() {
             <View style={s.rowBetween}>
               <View style={{ flex: 1 }}>
                 <Text style={s.title}>
-                  {info.emoji} {info.title}
+                  {info.emoji} {t(info.title)}
                 </Text>
                 <Text style={s.small}>
-                  {r.on ? `Every day at ${fmt(r.hour, r.minute)}` : "Off"}
+                  {r.on
+                    ? t("Every day at {time}", { time: fmt(r.hour, r.minute) })
+                    : t("Off")}
                 </Text>
               </View>
               <Switch
@@ -253,20 +260,20 @@ export default function RemindersScreen() {
 
             <View style={s.steppers}>
               <Stepper
-                label="Hour"
+                label={t("Hour")}
                 value={String(((r.hour + 11) % 12) + 1)}
                 onMinus={() => stepHour(key, -1)}
                 onPlus={() => stepHour(key, 1)}
               />
               <Stepper
-                label="Minute"
+                label={t("Minute")}
                 value={String(r.minute).padStart(2, "0")}
                 onMinus={() => stepMinute(key, -5)}
                 onPlus={() => stepMinute(key, 5)}
               />
               <Pressable style={s.ampm} onPress={() => stepHour(key, 12)}>
                 <Text style={s.ampmText}>{r.hour >= 12 ? "PM" : "AM"}</Text>
-                <Text style={s.small}>tap to switch</Text>
+                <Text style={s.small}>{t("tap to switch")}</Text>
               </Pressable>
             </View>
           </View>
@@ -274,12 +281,12 @@ export default function RemindersScreen() {
       })}
 
       <View style={s.card}>
-        <Text style={s.title}>Test</Text>
+        <Text style={s.title}>{t("Test")}</Text>
         <Text style={s.small}>
-          Send a notification in 5 seconds to check that it works on your phone.
+          {t("Send a notification in 5 seconds to check that it works on your phone.")}
         </Text>
         <Pressable style={s.button} onPress={sendTest}>
-          <Text style={s.buttonText}>Send test notification</Text>
+          <Text style={s.buttonText}>{t("Send test notification")}</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -340,4 +347,4 @@ const makeStyles = (c: Colors) =>
       marginTop: 12,
     },
     buttonText: { color: "#fff", fontWeight: "bold" },
-  }); 
+  });
