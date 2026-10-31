@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import {
   useData,
   Recurring,
@@ -23,7 +24,6 @@ import {
 } from "../app-data";
 import { WalletPicker } from "../wallet-picker";
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAYS_LONG = [
   "Sunday",
   "Monday",
@@ -46,14 +46,9 @@ const ordinal = (n: number) => {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
 
-const describe = (r: Recurring) => {
-  if (r.frequency === "daily") return "Every day";
-  if (r.frequency === "weekly") return `Every ${WEEKDAYS_LONG[r.day]}`;
-  return `Every month on the ${ordinal(r.day)}`;
-};
-
 export default function RecurringScreen() {
   const { colors } = useTheme();
+  const { t, lang, fdate, dayShort } = useI18n();
   const { recurring, addRecurring, toggleRecurring, deleteRecurring, goals, wallets } =
     useData();
   const s = makeStyles(colors);
@@ -71,6 +66,16 @@ export default function RecurringScreen() {
 
   const activeGoal = goals.find((g) => g.id === goalId)?.id ?? goals[0].id;
   const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
+
+  const describe = (r: Recurring) => {
+    if (r.frequency === "daily") return t("Every day");
+    if (r.frequency === "weekly") {
+      return t("Every {day}", { day: t(WEEKDAYS_LONG[r.day]) });
+    }
+    return lang === "fil"
+      ? t("Every month on day {n}", { n: r.day })
+      : `Every month on the ${ordinal(r.day)}`;
+  };
 
   const openNew = () => {
     setKind("gastos");
@@ -101,41 +106,39 @@ export default function RecurringScreen() {
 
   const confirmDelete = (r: Recurring) => {
     Alert.alert(
-      "Delete this recurring entry?",
-      "Entries it already added will stay in History.",
+      t("Delete this recurring entry?"),
+      t("Entries it already added will stay in History."),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteRecurring(r.id) },
+        { text: t("Cancel"), style: "cancel" },
+        { text: t("Delete"), style: "destructive", onPress: () => deleteRecurring(r.id) },
       ]
     );
   };
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={s.container}>
         <View style={s.headRow}>
-          <Text style={s.section}>Recurring</Text>
+          <Text style={s.section}>{t("Recurring")}</Text>
           <Pressable onPress={openNew} style={s.newBtn}>
             <Ionicons name="add" size={18} color="#fff" />
-            <Text style={s.newBtnText}>New</Text>
+            <Text style={s.newBtnText}>{t("New")}</Text>
           </Pressable>
         </View>
         <Text style={s.small}>
-          These are added automatically when you open the app on or after the due
-          date. Examples: weekly baon, monthly subscription, daily fare.
+          {t(
+            "These are added automatically when you open the app on or after the due date. Examples: weekly baon, monthly subscription, daily fare."
+          )}
         </Text>
 
         {recurring.length === 0 ? (
-          <Text style={s.empty}>No recurring entries yet.</Text>
+          <Text style={s.empty}>{t("No recurring entries yet.")}</Text>
         ) : (
           recurring.map((r) => {
             const isIpon = r.kind === "ipon";
             const cat = categoryOf(r.tag);
             const g = goals.find((x) => x.id === (r.tag ?? DEFAULT_GOAL_ID));
-            const label = isIpon ? g?.name ?? "Ipon" : cat.label;
+            const label = isIpon ? g?.name ?? "Ipon" : t(cat.label);
             const emoji = isIpon ? g?.emoji ?? "💰" : cat.emoji;
             return (
               <View key={r.id} style={[s.card, !r.active && { opacity: 0.55 }]}>
@@ -146,7 +149,9 @@ export default function RecurringScreen() {
                     </Text>
                     <Text style={s.small}>{describe(r)}</Text>
                     <Text style={s.small}>
-                      {r.active ? `Next: ${formatDate(r.nextDate)}` : "Paused"}
+                      {r.active
+                        ? t("Next: {d}", { d: fdate(r.nextDate) })
+                        : t("Paused")}
                     </Text>
                   </View>
                   <Text
@@ -162,7 +167,10 @@ export default function RecurringScreen() {
                       onValueChange={() => toggleRecurring(r.id)}
                       trackColor={{ false: "#d1d5db", true: colors.green }}
                     />
-                    <Text style={s.small}>{r.active ? "  Active" : "  Paused"}</Text>
+                    <Text style={s.small}>
+                      {"  "}
+                      {r.active ? t("Active") : t("Paused")}
+                    </Text>
                   </View>
                   <Pressable onPress={() => confirmDelete(r)} hitSlop={10}>
                     <Ionicons name="trash-outline" size={20} color={colors.subtext} />
@@ -184,7 +192,7 @@ export default function RecurringScreen() {
         <View style={s.overlay}>
           <View style={s.modal}>
             <ScrollView keyboardShouldPersistTaps="handled">
-              <Text style={s.modalTitle}>New recurring entry</Text>
+              <Text style={s.modalTitle}>{t("New recurring entry")}</Text>
 
               <View style={s.chips}>
                 {(["gastos", "ipon"] as Kind[]).map((k) => (
@@ -202,7 +210,7 @@ export default function RecurringScreen() {
 
               <TextInput
                 style={s.input}
-                placeholder="Amount (₱)"
+                placeholder={t("Amount (₱)")}
                 placeholderTextColor={colors.subtext}
                 value={amount}
                 onChangeText={setAmount}
@@ -210,7 +218,7 @@ export default function RecurringScreen() {
               />
               <TextInput
                 style={s.input}
-                placeholder="Note (e.g. Baon, Netflix)"
+                placeholder={t("Note (e.g. Baon, Netflix)")}
                 placeholderTextColor={colors.subtext}
                 value={note}
                 onChangeText={setNote}
@@ -218,7 +226,7 @@ export default function RecurringScreen() {
 
               {kind === "gastos" ? (
                 <>
-                  <Text style={s.label}>Category</Text>
+                  <Text style={s.label}>{t("Category")}</Text>
                   <View style={s.chips}>
                     {CATEGORIES.map((c) => (
                       <Pressable
@@ -229,7 +237,7 @@ export default function RecurringScreen() {
                         <Text
                           style={[s.chipText, category === c.key && s.chipTextActive]}
                         >
-                          {c.emoji} {c.label}
+                          {c.emoji} {t(c.label)}
                         </Text>
                       </Pressable>
                     ))}
@@ -237,7 +245,7 @@ export default function RecurringScreen() {
                 </>
               ) : (
                 <>
-                  <Text style={s.label}>Goal</Text>
+                  <Text style={s.label}>{t("Goal")}</Text>
                   <View style={s.chips}>
                     {goals.map((g) => (
                       <Pressable
@@ -258,7 +266,7 @@ export default function RecurringScreen() {
 
               <WalletPicker value={activeWallet} onChange={setWalletId} />
 
-              <Text style={s.label}>How often?</Text>
+              <Text style={s.label}>{t("How often?")}</Text>
               <View style={s.chips}>
                 {FREQUENCIES.map((f) => (
                   <Pressable
@@ -269,7 +277,7 @@ export default function RecurringScreen() {
                     <Text
                       style={[s.chipText, frequency === f.key && s.chipTextActive]}
                     >
-                      {f.label}
+                      {t(f.label)}
                     </Text>
                   </Pressable>
                 ))}
@@ -277,16 +285,16 @@ export default function RecurringScreen() {
 
               {frequency === "weekly" && (
                 <>
-                  <Text style={s.label}>On which day?</Text>
+                  <Text style={s.label}>{t("On which day?")}</Text>
                   <View style={s.chips}>
-                    {WEEKDAYS.map((w, i) => (
+                    {WEEKDAYS_LONG.map((_, i) => (
                       <Pressable
-                        key={w}
+                        key={i}
                         onPress={() => setWeekday(i)}
                         style={[s.chip, weekday === i && s.chipActive]}
                       >
                         <Text style={[s.chipText, weekday === i && s.chipTextActive]}>
-                          {w}
+                          {dayShort(i)}
                         </Text>
                       </Pressable>
                     ))}
@@ -296,7 +304,7 @@ export default function RecurringScreen() {
 
               {frequency === "monthly" && (
                 <>
-                  <Text style={s.label}>Day of the month (1-31)</Text>
+                  <Text style={s.label}>{t("Day of the month (1-31)")}</Text>
                   <TextInput
                     style={s.input}
                     value={monthDay}
@@ -312,13 +320,15 @@ export default function RecurringScreen() {
                   style={[s.modalBtn, { backgroundColor: colors.barBg }]}
                   onPress={() => setOpen(false)}
                 >
-                  <Text style={{ color: colors.text, fontWeight: "600" }}>Cancel</Text>
+                  <Text style={{ color: colors.text, fontWeight: "600" }}>
+                    {t("Cancel")}
+                  </Text>
                 </Pressable>
                 <Pressable
                   style={[s.modalBtn, { backgroundColor: colors.green }]}
                   onPress={save}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>Save</Text>
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
                 </Pressable>
               </View>
             </ScrollView>

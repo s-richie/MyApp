@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, ScrollView, Share, Alert, StyleSheet } from "react-native";
 import { useTheme, Colors } from "../app-theme";
+import { useI18n } from "../i18n";
 import {
   useData,
   categoryOf,
@@ -21,6 +22,7 @@ const csvCell = (v: string | number) =>
 
 export default function ExportScreen() {
   const { colors } = useTheme();
+  const { t, localizeMonth } = useI18n();
   const {
     entries,
     monthEntries,
@@ -38,6 +40,7 @@ export default function ExportScreen() {
     .slice()
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  // CSV keeps English column names so it works the same in any spreadsheet
   const buildCsv = () => {
     const header = ["Date", "Type", "Amount", "Category / Goal", "Wallet", "Note"];
     const rows = list.map((e) => [
@@ -56,14 +59,17 @@ export default function ExportScreen() {
   const buildSummary = () => {
     const budgetNum = Number(budget) || 0;
     const lines = [
-      `💰 Ipon Bot — ${monthLabel}`,
+      t("💰 Ipon Bot — {month}", { month: localizeMonth(monthLabel) }),
       "",
-      `Saved: ₱${monthSaved.toLocaleString()}`,
-      `Spent: ₱${monthSpent.toLocaleString()}`,
+      t("Saved: ₱{n}", { n: monthSaved.toLocaleString() }),
+      t("Spent: ₱{n}", { n: monthSpent.toLocaleString() }),
     ];
     if (budgetNum > 0) {
       lines.push(
-        `Budget left: ₱${(budgetNum - monthSpent).toLocaleString()} of ₱${budgetNum.toLocaleString()}`
+        t("Budget left: ₱{a} of ₱{b}", {
+          a: (budgetNum - monthSpent).toLocaleString(),
+          b: budgetNum.toLocaleString(),
+        })
       );
     }
 
@@ -76,10 +82,10 @@ export default function ExportScreen() {
       });
     const cats = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
     if (cats.length > 0) {
-      lines.push("", "Where the money went:");
+      lines.push("", t("Where the money went:"));
       cats.forEach(([key, value]) => {
         const c = categoryOf(key);
-        lines.push(`${c.emoji} ${c.label}: ₱${value.toLocaleString()}`);
+        lines.push(`${c.emoji} ${t(c.label)}: ₱${value.toLocaleString()}`);
       });
     }
     return lines.join("\n");
@@ -89,13 +95,13 @@ export default function ExportScreen() {
     try {
       await Share.share({ message, title });
     } catch (e) {
-      Alert.alert("Could not share", "Please try again.");
+      Alert.alert(t("Could not share"), t("Please try again."));
     }
   };
 
   const shareCsv = () => {
     if (list.length === 0) {
-      Alert.alert("Nothing to export", "There are no entries in this range.");
+      Alert.alert(t("Nothing to export"), t("There are no entries in this range."));
       return;
     }
     share(buildCsv(), "Ipon Bot entries (CSV)");
@@ -108,23 +114,25 @@ export default function ExportScreen() {
     >
       {/* Monthly summary */}
       <View style={s.card}>
-        <Text style={s.title}>Monthly summary</Text>
+        <Text style={s.title}>{t("Monthly summary")}</Text>
         <Text style={s.small}>
-          A short text of the month you pick below: saved, spent, budget left and
-          where the money went.
+          {t(
+            "A short text of the month you pick below: saved, spent, budget left and where the money went."
+          )}
         </Text>
         <MonthPicker />
         <Pressable style={s.button} onPress={() => share(buildSummary(), "Ipon Bot summary")}>
-          <Text style={s.buttonText}>Share summary</Text>
+          <Text style={s.buttonText}>{t("Share summary")}</Text>
         </Pressable>
       </View>
 
       {/* CSV */}
       <View style={s.card}>
-        <Text style={s.title}>Export entries (CSV)</Text>
+        <Text style={s.title}>{t("Export entries (CSV)")}</Text>
         <Text style={s.small}>
-          Columns: Date, Type, Amount, Category / Goal, Wallet, Note. Paste it into
-          a spreadsheet after sharing.
+          {t(
+            "Columns: Date, Type, Amount, Category / Goal, Wallet, Note. Paste it into a spreadsheet after sharing."
+          )}
         </Text>
 
         <View style={s.chips}>
@@ -135,17 +143,19 @@ export default function ExportScreen() {
               style={[s.chip, range === r && s.chipActive]}
             >
               <Text style={[s.chipText, range === r && s.chipTextActive]}>
-                {r === "month" ? monthLabel : "All time"}
+                {r === "month" ? localizeMonth(monthLabel) : t("All time")}
               </Text>
             </Pressable>
           ))}
         </View>
         <Text style={s.small}>
-          {list.length} {list.length === 1 ? "entry" : "entries"} will be exported.
+          {t(list.length === 1 ? "{n} entry will be exported." : "{n} entries will be exported.", {
+            n: list.length,
+          })}
         </Text>
 
         <Pressable style={s.button} onPress={shareCsv}>
-          <Text style={s.buttonText}>Share CSV</Text>
+          <Text style={s.buttonText}>{t("Share CSV")}</Text>
         </Pressable>
       </View>
     </ScrollView>
