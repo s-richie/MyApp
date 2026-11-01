@@ -31,7 +31,8 @@ export default function Budget() {
   const [walletId, setWalletId] = useState("");
 
   const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
-  const remaining = (Number(budget) || 0) - monthSpent;
+  const budgetNum = Number(budget) || 0;
+  const remaining = budgetNum - monthSpent;
   const recent = monthEntries.filter((e) => e.kind === "gastos").slice(0, 3);
 
   const handleAdd = () => {
@@ -49,13 +50,27 @@ export default function Budget() {
       {/* Budget */}
       <Card>
         <T kind="label">{t("Monthly budget (₱)")}</T>
-        <Field value={budget} onChangeText={setBudget} keyboardType="numeric" />
-        <T kind="label" style={{ marginTop: 8 }}>
-          {t("Remaining")}
-        </T>
-        <T kind="big" color={remaining < 0 ? colors.red : undefined}>
-          {peso(remaining)}
-        </T>
+        <Field
+          placeholder="0"
+          value={budget === "0" ? "" : budget}
+          onChangeText={setBudget}
+          keyboardType="numeric"
+        />
+
+        {budgetNum > 0 ? (
+          <>
+            <T kind="label" style={{ marginTop: 8 }}>
+              {t("Remaining")}
+            </T>
+            <T kind="big" color={remaining < 0 ? colors.red : undefined}>
+              {peso(remaining)}
+            </T>
+          </>
+        ) : (
+          <T kind="muted" style={{ marginTop: 8 }}>
+            {t("No budget set")}
+          </T>
+        )}
         <T kind="muted">
           {t("Spent: ₱{n}", { n: monthSpent.toLocaleString() })}
         </T>

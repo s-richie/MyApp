@@ -79,7 +79,7 @@ export type NewRecurring = {
 export const DEFAULT_GOAL_ID = "default";
 export const DEFAULT_WALLET_ID = "cash";
 
-// Kept so screens that are not redesigned yet still work
+// Kept so older code paths still work
 export const GOAL_EMOJIS = ["🎯", "💻", "📱", "✈️", "🏠", "🚲", "🎓", "🎁"];
 export const WALLET_EMOJIS = ["💵", "📱", "💜", "🏦", "💳", "👛", "🐷", "🎒"];
 
@@ -247,7 +247,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   ]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [recurring, setRecurring] = useState<Recurring[]>([]);
-  const [budget, setBudget] = useState("5000");
+  const [budget, setBudget] = useState("0");
   const [loaded, setLoaded] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(monthKeyOf(new Date()));
 
