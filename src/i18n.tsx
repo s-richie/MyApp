@@ -3,11 +3,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import fil1 from "./fil-1";
 import fil2 from "./fil-2";
 import fil3 from "./fil-3";
+import fil4 from "./fil-4";
+import fil5 from "./fil-5";
+import fil6 from "./fil-6";
 
 export type Lang = "en" | "fil";
 
 const KEY = "iponbot:lang";
-const FIL: Record<string, string> = { ...fil1, ...fil2, ...fil3 };
+const FIL: Record<string, string> = {
+  ...fil1,
+  ...fil2,
+  ...fil3,
+  ...fil4,
+  ...fil5,
+  ...fil6,
+};
 
 const MONTHS_EN = [
   "January", "February", "March", "April", "May", "June",

@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  Switch,
-  Pressable,
-  ScrollView,
-  Alert,
-  Platform,
-  StyleSheet,
-} from "react-native";
+import { View, Switch, Pressable, Alert, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useTheme, Colors } from "./app-theme";
+import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
+import { Screen, Card, T, IconCircle, Chip, Button, IconName } from "./ui";
 
 // Show notifications even while the app is open
 Notifications.setNotificationHandler({
@@ -36,16 +29,16 @@ const DEFAULTS: Settings = {
   gastos: { on: false, hour: 21, minute: 0 },
 };
 
-const INFO: Record<Key, { title: string; emoji: string; body: string }> = {
+const INFO: Record<Key, { title: string; icon: IconName; body: string }> = {
   ipon: {
     title: "Ipon reminder",
-    emoji: "💰",
-    body: "Naka-ipon ka na ba today? Kahit ₱10, counted! 💰",
+    icon: "wallet",
+    body: "Naka-ipon ka na ba today? Kahit ₱10, counted!",
   },
   gastos: {
     title: "Gastos reminder",
-    emoji: "🧾",
-    body: "Nailista mo na ba ang gastos mo today? 🧾",
+    icon: "receipt",
+    body: "Nailista mo na ba ang gastos mo today?",
   },
 };
 
@@ -85,10 +78,49 @@ async function ensurePermission() {
   return asked.granted;
 }
 
+function Stepper({
+  label,
+  value,
+  onMinus,
+  onPlus,
+}: {
+  label: string;
+  value: string;
+  onMinus: () => void;
+  onPlus: () => void;
+}) {
+  const { colors } = useTheme();
+  const btn = {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+  return (
+    <View style={{ alignItems: "center" }}>
+      <T kind="muted">{label}</T>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+        <Pressable style={btn} onPress={onMinus}>
+          <Ionicons name="remove" size={18} color={colors.text} />
+        </Pressable>
+        <T style={{ minWidth: 26, textAlign: "center", fontSize: 18, fontWeight: "700" }}>
+          {value}
+        </T>
+        <Pressable style={btn} onPress={onPlus}>
+          <Ionicons name="add" size={18} color={colors.text} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export default function RemindersScreen() {
   const { colors } = useTheme();
   const { t } = useI18n();
-  const s = makeStyles(colors);
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const settingsRef = useRef<Settings>(DEFAULTS);
@@ -138,7 +170,7 @@ export default function RemindersScreen() {
           );
         } else {
           next.id = await Notifications.scheduleNotificationAsync({
-            content: { title: "Ipon Bot 🤖", body: INFO[key].body },
+            content: { title: "Ipon Bot", body: INFO[key].body },
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.DAILY,
               hour: next.hour,
@@ -178,76 +210,37 @@ export default function RemindersScreen() {
         return;
       }
       await Notifications.scheduleNotificationAsync({
-        content: { title: "Ipon Bot 🤖", body: "It works! Reminders are ready. 🎉" },
+        content: { title: "Ipon Bot", body: "It works! Reminders are ready." },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: 5,
           ...channelPart(),
         },
       });
-      Alert.alert(
-        t("Test sent"),
-        t(
-          "A notification will show up in 5 seconds. You can also leave the app to see it in the notification bar."
-        )
-      );
+      Alert.alert(t("Test sent"), t("Notification in 5 seconds."));
     } catch (e) {
       console.warn("Test notification error", e);
       Alert.alert(t("Could not send the test"), String(e));
     }
   };
 
-  const Stepper = ({
-    label,
-    value,
-    onMinus,
-    onPlus,
-  }: {
-    label: string;
-    value: string;
-    onMinus: () => void;
-    onPlus: () => void;
-  }) => (
-    <View style={s.stepper}>
-      <Text style={s.small}>{label}</Text>
-      <View style={s.stepRow}>
-        <Pressable style={s.stepBtn} onPress={onMinus}>
-          <Text style={s.stepText}>−</Text>
-        </Pressable>
-        <Text style={s.stepValue}>{value}</Text>
-        <Pressable style={s.stepBtn} onPress={onPlus}>
-          <Text style={s.stepText}>+</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={s.container}
-    >
-      <Text style={s.small}>
-        {t(
-          "Reminders are scheduled on your phone, so they work without internet. Android may delay them if battery saver is on."
-        )}
-      </Text>
-
+    <Screen>
       {(["ipon", "gastos"] as Key[]).map((key) => {
         const r = settings[key];
         const info = INFO[key];
+        const tone = key === "ipon" ? colors.green : colors.red;
         return (
-          <View key={key} style={s.card}>
-            <View style={s.rowBetween}>
+          <Card key={key}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <IconCircle name={info.icon} color={tone} size={42} />
               <View style={{ flex: 1 }}>
-                <Text style={s.title}>
-                  {info.emoji} {t(info.title)}
-                </Text>
-                <Text style={s.small}>
+                <T kind="title">{t(info.title)}</T>
+                <T kind="muted">
                   {r.on
                     ? t("Every day at {time}", { time: fmt(r.hour, r.minute) })
                     : t("Off")}
-                </Text>
+                </T>
               </View>
               <Switch
                 value={r.on}
@@ -256,9 +249,24 @@ export default function RemindersScreen() {
               />
             </View>
 
-            <Text style={s.time}>{fmt(r.hour, r.minute)}</Text>
+            <T
+              style={{
+                fontSize: 34,
+                fontWeight: "800",
+                textAlign: "center",
+                marginVertical: 12,
+              }}
+            >
+              {fmt(r.hour, r.minute)}
+            </T>
 
-            <View style={s.steppers}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-around",
+                alignItems: "center",
+              }}
+            >
               <Stepper
                 label={t("Hour")}
                 value={String(((r.hour + 11) % 12) + 1)}
@@ -271,80 +279,25 @@ export default function RemindersScreen() {
                 onMinus={() => stepMinute(key, -5)}
                 onPlus={() => stepMinute(key, 5)}
               />
-              <Pressable style={s.ampm} onPress={() => stepHour(key, 12)}>
-                <Text style={s.ampmText}>{r.hour >= 12 ? "PM" : "AM"}</Text>
-                <Text style={s.small}>{t("tap to switch")}</Text>
-              </Pressable>
+              <Chip
+                label={r.hour >= 12 ? "PM" : "AM"}
+                active
+                color={tone}
+                onPress={() => stepHour(key, 12)}
+              />
             </View>
-          </View>
+          </Card>
         );
       })}
 
-      <View style={s.card}>
-        <Text style={s.title}>{t("Test")}</Text>
-        <Text style={s.small}>
-          {t("Send a notification in 5 seconds to check that it works on your phone.")}
-        </Text>
-        <Pressable style={s.button} onPress={sendTest}>
-          <Text style={s.buttonText}>{t("Send test notification")}</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+      <Card>
+        <T kind="title">{t("Test")}</T>
+        <Button
+          label={t("Send test notification")}
+          icon="notifications"
+          onPress={sendTest}
+        />
+      </Card>
+    </Screen>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    container: { padding: 16, paddingBottom: 32 },
-    card: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      marginTop: 12,
-    },
-    rowBetween: { flexDirection: "row", alignItems: "center", gap: 12 },
-    title: { color: c.text, fontSize: 16, fontWeight: "bold" },
-    small: { color: c.subtext, fontSize: 13, marginTop: 4 },
-    time: {
-      color: c.text,
-      fontSize: 34,
-      fontWeight: "bold",
-      textAlign: "center",
-      marginVertical: 10,
-    },
-    steppers: { flexDirection: "row", justifyContent: "space-around", alignItems: "center" },
-    stepper: { alignItems: "center" },
-    stepRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
-    stepBtn: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      backgroundColor: c.background,
-      borderWidth: 1,
-      borderColor: c.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    stepText: { color: c.text, fontSize: 20, fontWeight: "bold" },
-    stepValue: { color: c.text, fontSize: 18, fontWeight: "600", minWidth: 28, textAlign: "center" },
-    ampm: {
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.background,
-      alignItems: "center",
-    },
-    ampmText: { color: c.green, fontSize: 18, fontWeight: "bold" },
-    button: {
-      backgroundColor: c.green,
-      padding: 12,
-      borderRadius: 8,
-      alignItems: "center",
-      marginTop: 12,
-    },
-    buttonText: { color: "#fff", fontWeight: "bold" },
-  });

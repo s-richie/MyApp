@@ -1,58 +1,62 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  Switch,
-  TextInput,
-  Pressable,
-  ScrollView,
-  Modal,
-  Alert,
-  StyleSheet,
-} from "react-native";
+import { View, Switch, Pressable, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme, Colors } from "../app-theme";
-import { useData, WALLET_EMOJIS, Wallet } from "../app-data";
-import { useI18n, Lang } from "../i18n";
+import { useTheme } from "../app-theme";
+import { useI18n } from "../i18n";
+import { useData, Wallet } from "../app-data";
 import { SecurityCard } from "../security-card";
+import {
+  Screen,
+  Card,
+  T,
+  IconCircle,
+  Chip,
+  Chips,
+  Field,
+  Sheet,
+  IconPicker,
+  SectionHeader,
+  iconOf,
+  peso,
+  WALLET_ICONS,
+} from "../ui";
 
 export default function Settings() {
   const { isDark, setDark, colors } = useTheme();
-  const { lang, setLang, t } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const { wallets, addWallet, updateWallet, deleteWallet, walletBalance } = useData();
-  const s = makeStyles(colors);
 
-  const [modalOpen, setModalOpen] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [wName, setWName] = useState("");
-  const [wEmoji, setWEmoji] = useState(WALLET_EMOJIS[0]);
+  const [wIcon, setWIcon] = useState<string>(WALLET_ICONS[0]);
   const [wStart, setWStart] = useState("");
 
   const openNew = () => {
     setEditingId(null);
     setWName("");
-    setWEmoji(WALLET_EMOJIS[0]);
+    setWIcon(WALLET_ICONS[0]);
     setWStart("0");
-    setModalOpen(true);
+    setSheet(true);
   };
 
   const openEdit = (w: Wallet) => {
     setEditingId(w.id);
     setWName(w.name);
-    setWEmoji(w.emoji);
+    setWIcon(iconOf(w, "wallet"));
     setWStart(String(w.start));
-    setModalOpen(true);
+    setSheet(true);
   };
 
   const saveWallet = () => {
     const start = Number(wStart);
     if (!wName.trim() || isNaN(start)) return;
     if (editingId) {
-      updateWallet(editingId, { name: wName.trim(), emoji: wEmoji, start });
+      updateWallet(editingId, { name: wName.trim(), icon: wIcon, start });
     } else {
-      addWallet(wName.trim(), wEmoji, start);
+      addWallet(wName.trim(), wIcon, start);
     }
-    setModalOpen(false);
+    setSheet(false);
   };
 
   const confirmDelete = (w: Wallet) => {
@@ -71,234 +75,92 @@ export default function Settings() {
   };
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={s.container}
-      keyboardShouldPersistTaps="handled"
-    >
+    <Screen>
       {/* Dark mode */}
-      <View style={s.card}>
-        <View style={s.rowBetween}>
-          <View>
-            <Text style={s.title}>{t("Dark mode")}</Text>
-            <Text style={s.small}>
-              {isDark ? t("Dark theme is on") : t("Light theme is on")}
-            </Text>
-          </View>
+      <Card>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <IconCircle name="moon" size={40} color={colors.blue} />
+          <T kind="title" style={{ flex: 1 }}>
+            {t("Dark mode")}
+          </T>
           <Switch
             value={isDark}
             onValueChange={setDark}
             trackColor={{ false: "#d1d5db", true: colors.green }}
           />
         </View>
-      </View>
+      </Card>
 
       {/* Language */}
-      <View style={[s.card, { marginTop: 12 }]}>
-        <Text style={s.title}>{t("Language")}</Text>
-        <Text style={s.small}>{t("Choose the app language.")}</Text>
-        <View style={s.langRow}>
-          {(["en", "fil"] as Lang[]).map((l) => (
-            <Pressable
-              key={l}
-              onPress={() => setLang(l)}
-              style={[s.chip, lang === l && s.chipActive]}
-            >
-              <Text style={[s.chipText, lang === l && s.chipTextActive]}>
-                {l === "en" ? "English" : "Filipino"}
-              </Text>
-            </Pressable>
-          ))}
+      <Card>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <IconCircle name="globe" size={40} color={colors.blue} />
+          <T kind="title">{t("Language")}</T>
         </View>
-      </View>
+        <Chips>
+          <Chip label="English" active={lang === "en"} onPress={() => setLang("en")} />
+          <Chip label="Filipino" active={lang === "fil"} onPress={() => setLang("fil")} />
+        </Chips>
+      </Card>
 
-      {/* Security */}
+      {/* Security (redesigned in Part 3) */}
       <SecurityCard />
+      <View style={{ height: 16 }} />
 
       {/* Wallets */}
-      <View style={s.sectionRow}>
-        <Text style={s.section}>{t("Wallets")}</Text>
-        <Pressable onPress={openNew} style={s.newBtn}>
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={s.newBtnText}>{t("New wallet")}</Text>
-        </Pressable>
-      </View>
-      <Text style={s.small}>
-        {t(
-          "Balance = starting balance + ipon − gastos. Edit the starting balance anytime to match the money you really have."
-        )}
-      </Text>
+      <SectionHeader title={t("Wallets")} actionLabel={t("New")} onAction={openNew} />
 
       {wallets.map((w) => {
         const bal = walletBalance(w.id);
         return (
-          <View key={w.id} style={[s.card, { marginTop: 10 }]}>
-            <View style={s.rowBetween}>
-              <Text style={s.title}>
-                {w.emoji} {w.name}
-              </Text>
-              <View style={s.actions}>
-                <Pressable onPress={() => openEdit(w)} hitSlop={10}>
-                  <Ionicons name="create-outline" size={20} color={colors.subtext} />
-                </Pressable>
-                <Pressable onPress={() => confirmDelete(w)} hitSlop={10}>
-                  <Ionicons name="trash-outline" size={20} color={colors.subtext} />
-                </Pressable>
+          <Card key={w.id}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <IconCircle name={iconOf(w, "wallet")} size={42} />
+              <View style={{ flex: 1 }}>
+                <T kind="title" numberOfLines={1}>
+                  {w.name}
+                </T>
+                <T kind="muted">
+                  {t("Start: {n}", { n: peso(w.start) })}
+                </T>
               </View>
+              <Pressable onPress={() => openEdit(w)} hitSlop={10}>
+                <Ionicons name="create-outline" size={20} color={colors.subtext} />
+              </Pressable>
+              <Pressable onPress={() => confirmDelete(w)} hitSlop={10}>
+                <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+              </Pressable>
             </View>
-            <Text style={[s.balance, bal < 0 && { color: colors.red }]}>
-              ₱{bal.toLocaleString()}
-            </Text>
-            <Text style={s.small}>
-              {t("Starting balance: ₱{n}", { n: w.start.toLocaleString() })}
-            </Text>
-          </View>
+            <T
+              color={bal < 0 ? colors.red : undefined}
+              style={{ fontSize: 24, fontWeight: "800", marginTop: 10 }}
+            >
+              {peso(bal)}
+            </T>
+          </Card>
         );
       })}
 
-      {/* Wallet modal */}
-      <Modal
-        visible={modalOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalOpen(false)}
+      {/* Wallet sheet */}
+      <Sheet
+        visible={sheet}
+        title={editingId ? t("Edit wallet") : t("New wallet")}
+        onClose={() => setSheet(false)}
+        onSave={saveWallet}
       >
-        <View style={s.overlay}>
-          <View style={s.modal}>
-            <Text style={s.modalTitle}>
-              {editingId ? t("Edit wallet") : t("New wallet")}
-            </Text>
-
-            <TextInput
-              style={s.input}
-              placeholder={t("Name (e.g. Maya, Bank)")}
-              placeholderTextColor={colors.subtext}
-              value={wName}
-              onChangeText={setWName}
-            />
-            <TextInput
-              style={s.input}
-              placeholder={t("Starting balance (₱)")}
-              placeholderTextColor={colors.subtext}
-              value={wStart}
-              onChangeText={setWStart}
-              keyboardType="numeric"
-            />
-
-            <View style={s.emojis}>
-              {WALLET_EMOJIS.map((e) => (
-                <Pressable
-                  key={e}
-                  onPress={() => setWEmoji(e)}
-                  style={[s.emojiBtn, wEmoji === e && s.emojiBtnActive]}
-                >
-                  <Text style={{ fontSize: 22 }}>{e}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={s.modalButtons}>
-              <Pressable
-                style={[s.modalBtn, { backgroundColor: colors.barBg }]}
-                onPress={() => setModalOpen(false)}
-              >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>
-                  {t("Cancel")}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[s.modalBtn, { backgroundColor: colors.green }]}
-                onPress={saveWallet}
-              >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        <Field
+          placeholder={t("Name (e.g. Maya, Bank)")}
+          value={wName}
+          onChangeText={setWName}
+        />
+        <Field
+          placeholder={t("Starting balance (₱)")}
+          value={wStart}
+          onChangeText={setWStart}
+          keyboardType="numeric"
+        />
+        <IconPicker value={wIcon} options={WALLET_ICONS} onChange={setWIcon} />
+      </Sheet>
+    </Screen>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    container: { padding: 16, paddingBottom: 32 },
-    card: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    rowBetween: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    title: { color: c.text, fontSize: 16, fontWeight: "bold" },
-    small: { color: c.subtext, fontSize: 13, marginTop: 4 },
-    langRow: { flexDirection: "row", gap: 8, marginTop: 12 },
-    chip: {
-      paddingVertical: 8,
-      paddingHorizontal: 18,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.background,
-    },
-    chipActive: { backgroundColor: c.green, borderColor: c.green },
-    chipText: { color: c.text },
-    chipTextActive: { color: "#fff", fontWeight: "bold" },
-    section: { fontSize: 16, fontWeight: "bold", color: c.text },
-    sectionRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginTop: 20,
-    },
-    newBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      backgroundColor: c.green,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 20,
-    },
-    newBtnText: { color: "#fff", fontWeight: "bold" },
-    actions: { flexDirection: "row", gap: 14 },
-    balance: { color: c.text, fontSize: 26, fontWeight: "bold", marginTop: 6 },
-    overlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      padding: 24,
-    },
-    modal: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    modalTitle: { color: c.text, fontSize: 18, fontWeight: "bold", marginBottom: 8 },
-    input: {
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.inputBg,
-      color: c.text,
-      borderRadius: 8,
-      padding: 10,
-      marginVertical: 6,
-    },
-    emojis: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
-    emojiBtn: {
-      padding: 8,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    emojiBtnActive: { borderColor: c.green, backgroundColor: c.barBg },
-    modalButtons: { flexDirection: "row", gap: 12, marginTop: 12 },
-    modalBtn: { flex: 1, padding: 12, borderRadius: 8, alignItems: "center" },
-  });

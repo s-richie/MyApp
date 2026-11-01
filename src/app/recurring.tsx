@@ -1,17 +1,7 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ScrollView,
-  Switch,
-  Modal,
-  Alert,
-  StyleSheet,
-} from "react-native";
+import { View, Pressable, Switch, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme, Colors } from "../app-theme";
+import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
 import {
   useData,
@@ -23,6 +13,21 @@ import {
   DEFAULT_GOAL_ID,
 } from "../app-data";
 import { WalletPicker } from "../wallet-picker";
+import {
+  Screen,
+  Card,
+  T,
+  IconCircle,
+  Chip,
+  Chips,
+  Field,
+  Sheet,
+  SectionHeader,
+  EmptyState,
+  iconOf,
+  safeIcon,
+  peso,
+} from "../ui";
 
 const WEEKDAYS_LONG = [
   "Sunday",
@@ -51,7 +56,6 @@ export default function RecurringScreen() {
   const { t, lang, fdate, dayShort } = useI18n();
   const { recurring, addRecurring, toggleRecurring, deleteRecurring, goals, wallets } =
     useData();
-  const s = makeStyles(colors);
 
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<Kind>("gastos");
@@ -116,303 +120,168 @@ export default function RecurringScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={s.container}>
-        <View style={s.headRow}>
-          <Text style={s.section}>{t("Recurring")}</Text>
-          <Pressable onPress={openNew} style={s.newBtn}>
-            <Ionicons name="add" size={18} color="#fff" />
-            <Text style={s.newBtnText}>{t("New")}</Text>
-          </Pressable>
-        </View>
-        <Text style={s.small}>
-          {t(
-            "These are added automatically when you open the app on or after the due date. Examples: weekly baon, monthly subscription, daily fare."
-          )}
-        </Text>
+    <Screen>
+      <SectionHeader title={t("Recurring")} actionLabel={t("New")} onAction={openNew} />
+      <T kind="muted" style={{ marginBottom: 12 }}>
+        {t("Added automatically when due.")}
+      </T>
 
-        {recurring.length === 0 ? (
-          <Text style={s.empty}>{t("No recurring entries yet.")}</Text>
-        ) : (
-          recurring.map((r) => {
-            const isIpon = r.kind === "ipon";
-            const cat = categoryOf(r.tag);
-            const g = goals.find((x) => x.id === (r.tag ?? DEFAULT_GOAL_ID));
-            const label = isIpon ? g?.name ?? "Ipon" : t(cat.label);
-            const emoji = isIpon ? g?.emoji ?? "💰" : cat.emoji;
-            return (
-              <View key={r.id} style={[s.card, !r.active && { opacity: 0.55 }]}>
-                <View style={s.rowBetween}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.title}>
-                      {emoji} {r.note || label}
-                    </Text>
-                    <Text style={s.small}>{describe(r)}</Text>
-                    <Text style={s.small}>
-                      {r.active
-                        ? t("Next: {d}", { d: fdate(r.nextDate) })
-                        : t("Paused")}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[s.amount, { color: isIpon ? colors.green : colors.red }]}
-                  >
-                    {isIpon ? "+" : "-"}₱{r.amount.toLocaleString()}
-                  </Text>
+      {recurring.length === 0 ? (
+        <EmptyState icon="repeat" text={t("No recurring entries yet.")} />
+      ) : (
+        recurring.map((r) => {
+          const isIpon = r.kind === "ipon";
+          const g = goals.find((x) => x.id === (r.tag ?? DEFAULT_GOAL_ID));
+          const label = isIpon ? g?.name ?? "Ipon" : t(categoryOf(r.tag).label);
+          const icon = isIpon
+            ? g
+              ? iconOf(g, "flag")
+              : "flag"
+            : safeIcon(categoryOf(r.tag).icon, "apps");
+          const tone = isIpon ? colors.green : colors.red;
+          return (
+            <Card key={r.id} style={!r.active ? { opacity: 0.55 } : undefined}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <IconCircle name={icon} color={tone} size={42} />
+                <View style={{ flex: 1 }}>
+                  <T kind="title" numberOfLines={1}>
+                    {r.note || label}
+                  </T>
+                  <T kind="muted">{describe(r)}</T>
+                  <T kind="muted">
+                    {r.active ? t("Next: {d}", { d: fdate(r.nextDate) }) : t("Paused")}
+                  </T>
                 </View>
-                <View style={[s.rowBetween, { marginTop: 10 }]}>
-                  <View style={s.rowCenter}>
-                    <Switch
-                      value={r.active}
-                      onValueChange={() => toggleRecurring(r.id)}
-                      trackColor={{ false: "#d1d5db", true: colors.green }}
-                    />
-                    <Text style={s.small}>
-                      {"  "}
-                      {r.active ? t("Active") : t("Paused")}
-                    </Text>
-                  </View>
-                  <Pressable onPress={() => confirmDelete(r)} hitSlop={10}>
-                    <Ionicons name="trash-outline" size={20} color={colors.subtext} />
-                  </Pressable>
-                </View>
+                <T color={tone} style={{ fontWeight: "700" }}>
+                  {isIpon ? "+" : "-"}
+                  {peso(r.amount)}
+                </T>
               </View>
-            );
-          })
-        )}
-      </ScrollView>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 8,
+                }}
+              >
+                <Switch
+                  value={r.active}
+                  onValueChange={() => toggleRecurring(r.id)}
+                  trackColor={{ false: "#d1d5db", true: colors.green }}
+                />
+                <Pressable onPress={() => confirmDelete(r)} hitSlop={10}>
+                  <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+                </Pressable>
+              </View>
+            </Card>
+          );
+        })
+      )}
 
-      {/* New recurring modal */}
-      <Modal
+      <Sheet
         visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
+        title={t("New recurring entry")}
+        onClose={() => setOpen(false)}
+        onSave={save}
       >
-        <View style={s.overlay}>
-          <View style={s.modal}>
-            <ScrollView keyboardShouldPersistTaps="handled">
-              <Text style={s.modalTitle}>{t("New recurring entry")}</Text>
+        <Chips>
+          <Chip
+            label="Gastos"
+            icon="remove-circle"
+            active={kind === "gastos"}
+            color={colors.red}
+            onPress={() => setKind("gastos")}
+          />
+          <Chip
+            label="Ipon"
+            icon="add-circle"
+            active={kind === "ipon"}
+            onPress={() => setKind("ipon")}
+          />
+        </Chips>
 
-              <View style={s.chips}>
-                {(["gastos", "ipon"] as Kind[]).map((k) => (
-                  <Pressable
-                    key={k}
-                    onPress={() => setKind(k)}
-                    style={[s.chip, kind === k && s.chipActive]}
-                  >
-                    <Text style={[s.chipText, kind === k && s.chipTextActive]}>
-                      {k === "gastos" ? "Gastos" : "Ipon"}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+        <Field
+          placeholder={t("Amount (₱)")}
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="numeric"
+        />
+        <Field
+          placeholder={t("Note (e.g. Baon, Netflix)")}
+          value={note}
+          onChangeText={setNote}
+        />
 
-              <TextInput
-                style={s.input}
-                placeholder={t("Amount (₱)")}
-                placeholderTextColor={colors.subtext}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="numeric"
+        {kind === "gastos" ? (
+          <Chips>
+            {CATEGORIES.map((c) => (
+              <Chip
+                key={c.key}
+                label={t(c.label)}
+                icon={safeIcon(c.icon, "apps")}
+                active={category === c.key}
+                color={colors.blue}
+                onPress={() => setCategory(c.key)}
               />
-              <TextInput
-                style={s.input}
-                placeholder={t("Note (e.g. Baon, Netflix)")}
-                placeholderTextColor={colors.subtext}
-                value={note}
-                onChangeText={setNote}
+            ))}
+          </Chips>
+        ) : (
+          <Chips>
+            {goals.map((g) => (
+              <Chip
+                key={g.id}
+                label={g.name}
+                icon={iconOf(g, "flag")}
+                active={activeGoal === g.id}
+                onPress={() => setGoalId(g.id)}
               />
+            ))}
+          </Chips>
+        )}
 
-              {kind === "gastos" ? (
-                <>
-                  <Text style={s.label}>{t("Category")}</Text>
-                  <View style={s.chips}>
-                    {CATEGORIES.map((c) => (
-                      <Pressable
-                        key={c.key}
-                        onPress={() => setCategory(c.key)}
-                        style={[s.chip, category === c.key && s.chipActive]}
-                      >
-                        <Text
-                          style={[s.chipText, category === c.key && s.chipTextActive]}
-                        >
-                          {c.emoji} {t(c.label)}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={s.label}>{t("Goal")}</Text>
-                  <View style={s.chips}>
-                    {goals.map((g) => (
-                      <Pressable
-                        key={g.id}
-                        onPress={() => setGoalId(g.id)}
-                        style={[s.chip, activeGoal === g.id && s.chipActive]}
-                      >
-                        <Text
-                          style={[s.chipText, activeGoal === g.id && s.chipTextActive]}
-                        >
-                          {g.emoji} {g.name}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              )}
+        <WalletPicker value={activeWallet} onChange={setWalletId} />
 
-              <WalletPicker value={activeWallet} onChange={setWalletId} />
+        <T kind="label">{t("How often?")}</T>
+        <Chips>
+          {FREQUENCIES.map((f) => (
+            <Chip
+              key={f.key}
+              label={t(f.label)}
+              active={frequency === f.key}
+              onPress={() => setFrequency(f.key)}
+            />
+          ))}
+        </Chips>
 
-              <Text style={s.label}>{t("How often?")}</Text>
-              <View style={s.chips}>
-                {FREQUENCIES.map((f) => (
-                  <Pressable
-                    key={f.key}
-                    onPress={() => setFrequency(f.key)}
-                    style={[s.chip, frequency === f.key && s.chipActive]}
-                  >
-                    <Text
-                      style={[s.chipText, frequency === f.key && s.chipTextActive]}
-                    >
-                      {t(f.label)}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+        {frequency === "weekly" && (
+          <>
+            <T kind="label">{t("On which day?")}</T>
+            <Chips>
+              {WEEKDAYS_LONG.map((_, i) => (
+                <Chip
+                  key={i}
+                  label={dayShort(i)}
+                  active={weekday === i}
+                  onPress={() => setWeekday(i)}
+                />
+              ))}
+            </Chips>
+          </>
+        )}
 
-              {frequency === "weekly" && (
-                <>
-                  <Text style={s.label}>{t("On which day?")}</Text>
-                  <View style={s.chips}>
-                    {WEEKDAYS_LONG.map((_, i) => (
-                      <Pressable
-                        key={i}
-                        onPress={() => setWeekday(i)}
-                        style={[s.chip, weekday === i && s.chipActive]}
-                      >
-                        <Text style={[s.chipText, weekday === i && s.chipTextActive]}>
-                          {dayShort(i)}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              )}
-
-              {frequency === "monthly" && (
-                <>
-                  <Text style={s.label}>{t("Day of the month (1-31)")}</Text>
-                  <TextInput
-                    style={s.input}
-                    value={monthDay}
-                    onChangeText={setMonthDay}
-                    keyboardType="numeric"
-                    maxLength={2}
-                  />
-                </>
-              )}
-
-              <View style={s.modalButtons}>
-                <Pressable
-                  style={[s.modalBtn, { backgroundColor: colors.barBg }]}
-                  onPress={() => setOpen(false)}
-                >
-                  <Text style={{ color: colors.text, fontWeight: "600" }}>
-                    {t("Cancel")}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[s.modalBtn, { backgroundColor: colors.green }]}
-                  onPress={save}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
-                </Pressable>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </View>
+        {frequency === "monthly" && (
+          <>
+            <T kind="label">{t("Day of the month (1-31)")}</T>
+            <Field
+              value={monthDay}
+              onChangeText={setMonthDay}
+              keyboardType="numeric"
+              maxLength={2}
+            />
+          </>
+        )}
+      </Sheet>
+    </Screen>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    container: { padding: 16, paddingBottom: 32 },
-    headRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    section: { fontSize: 16, fontWeight: "bold", color: c.text },
-    small: { color: c.subtext, fontSize: 13, marginTop: 4 },
-    label: { color: c.subtext, fontSize: 14, marginTop: 6 },
-    newBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      backgroundColor: c.green,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 20,
-    },
-    newBtnText: { color: "#fff", fontWeight: "bold" },
-    empty: { color: c.subtext, textAlign: "center", marginTop: 32 },
-    card: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      marginTop: 12,
-    },
-    rowBetween: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    rowCenter: { flexDirection: "row", alignItems: "center" },
-    title: { color: c.text, fontSize: 16, fontWeight: "bold" },
-    amount: { fontSize: 18, fontWeight: "bold" },
-    chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
-    chip: {
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.card,
-    },
-    chipActive: { backgroundColor: c.green, borderColor: c.green },
-    chipText: { color: c.text },
-    chipTextActive: { color: "#fff", fontWeight: "bold" },
-    input: {
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.inputBg,
-      color: c.text,
-      borderRadius: 8,
-      padding: 10,
-      marginVertical: 6,
-    },
-    overlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      padding: 20,
-    },
-    modal: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-      maxHeight: "90%",
-    },
-    modalTitle: { color: c.text, fontSize: 18, fontWeight: "bold", marginBottom: 8 },
-    modalButtons: { flexDirection: "row", gap: 12, marginTop: 12 },
-    modalBtn: { flex: 1, padding: 12, borderRadius: 8, alignItems: "center" },
-  });

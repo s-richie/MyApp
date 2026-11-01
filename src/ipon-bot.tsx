@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { View, Image, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
 import { useData, Entry, categoryOf } from "./app-data";
+import { T } from "./ui";
 
 export const dayKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -10,10 +12,10 @@ export const dayKey = (d: Date) =>
   ).padStart(2, "0")}`;
 
 export const BADGES = [
-  { days: 3, emoji: "🥉", label: "3 days" },
-  { days: 7, emoji: "🥈", label: "7 days" },
-  { days: 14, emoji: "🥇", label: "14 days" },
-  { days: 30, emoji: "🏆", label: "30 days" },
+  { days: 3, icon: "medal" as const, color: "#cd7f32", label: "3 days" },
+  { days: 7, icon: "medal" as const, color: "#9ca3af", label: "7 days" },
+  { days: 14, icon: "medal" as const, color: "#eab308", label: "14 days" },
+  { days: 30, icon: "trophy" as const, color: "#f59e0b", label: "30 days" },
 ];
 
 export function computeStreak(entries: Entry[]) {
@@ -67,22 +69,17 @@ function useTips(): string[] {
     const used = monthSpent / budgetNum;
     if (remaining < 0) {
       tips.push(
-        t(
-          "Naku! You're over budget by ₱{n} this month. Try holding off on non-essentials. 😅",
-          { n: Math.abs(remaining).toLocaleString() }
-        )
+        t("Over budget by ₱{n}. Slow down on spending.", {
+          n: Math.abs(remaining).toLocaleString(),
+        })
       );
     } else if (used >= 0.8) {
       tips.push(
-        t("Heads up! You've used {p}% of your budget. Slow down on gastos! 🐢", {
-          p: Math.round(used * 100),
-        })
+        t("{p}% of your budget is used. Careful!", { p: Math.round(used * 100) })
       );
     } else if (monthSpent > 0) {
       tips.push(
-        t("You've used {p}% of your budget so far. Keep it up! 💪", {
-          p: Math.round(used * 100),
-        })
+        t("{p}% of your budget used. Nice pace!", { p: Math.round(used * 100) })
       );
     }
   }
@@ -93,13 +90,10 @@ function useTips(): string[] {
     const done = goalSaved(g.id);
     const left = g.target - done;
     if (left <= 0) {
-      tips.push(t("Congrats! You reached your {name} goal! 🎉", { name: g.name }));
+      tips.push(t("{name} goal reached. Congrats!", { name: g.name }));
     } else if (done / g.target >= 0.8) {
       tips.push(
-        t("Only ₱{n} to go for your {name}! Almost there! 🚀", {
-          n: left.toLocaleString(),
-          name: g.name,
-        })
+        t("₱{n} to go for {name}!", { n: left.toLocaleString(), name: g.name })
       );
     }
   });
@@ -107,15 +101,13 @@ function useTips(): string[] {
   // Streak tips
   const streak = computeStreak(entries);
   if (streak.current >= 3) {
-    tips.push(t("🔥 {n}-day ipon streak! Don't break it!", { n: streak.current }));
+    tips.push(t("{n}-day ipon streak. Keep going!", { n: streak.current }));
   }
   if (!streak.today) {
     tips.push(
       streak.current > 0
-        ? t("Wala ka pang ipon today. Save even ₱10 to keep your {n}-day streak!", {
-            n: streak.current,
-          })
-        : t("Wala pang ipon today. Even ₱10 counts! 💰")
+        ? t("Save today to keep your {n}-day streak.", { n: streak.current })
+        : t("No ipon yet today. Even ₱10 counts.")
     );
   }
 
@@ -138,7 +130,7 @@ function useTips(): string[] {
     const pct = Math.round((topVal / monthSpent) * 100);
     if (pct >= 50) {
       tips.push(
-        t("Most of your gastos ({p}%) goes to {cat}. Maybe set a limit?", {
+        t("{p}% of spending goes to {cat}.", {
           p: pct,
           cat: t(categoryOf(topKey).label),
         })
@@ -146,51 +138,51 @@ function useTips(): string[] {
     }
   }
 
-  // Always-available tips
   if (entries.length === 0) {
-    tips.push(t("Hi! I'm Ipon Bot 🤖 Add your ipon and gastos and I'll give you tips."));
+    tips.push(t("Hi, I'm Ipon Bot! Add an ipon to start."));
   }
-  tips.push(t("Tip: Save first, then spend what's left. 😉"));
+  tips.push(t("Tip: save first, spend what's left."));
 
   return tips;
 }
 
 export function BotTip() {
   const { colors } = useTheme();
-  const { t } = useI18n();
   const tips = useTips();
   const [i, setI] = useState(0);
   const idx = i % tips.length;
 
   return (
-    <Pressable onPress={() => setI(i + 1)} style={s.row}>
+    <Pressable
+      onPress={() => setI(i + 1)}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 12,
+      }}
+    >
       <Image
         source={require("../assets/images/splash-icon.png")}
-        style={s.robot}
+        style={{ width: 64, height: 64 }}
         resizeMode="contain"
       />
       <View
-        style={[
-          s.bubble,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
+        style={{
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderWidth: 1,
+          borderRadius: 16,
+          padding: 12,
+        }}
       >
-        <Text style={{ color: colors.text, fontSize: 14 }}>{tips[idx]}</Text>
-        <Text style={{ color: colors.subtext, fontSize: 11, marginTop: 6 }}>
-          {t("Tap for another tip ({i}/{n})", { i: idx + 1, n: tips.length })}
-        </Text>
+        <T style={{ flex: 1, fontSize: 14 }}>{tips[idx]}</T>
+        <Ionicons name="refresh" size={16} color={colors.subtext} />
       </View>
     </Pressable>
   );
 }
-
-const s = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
-  robot: { width: 70, height: 70 },
-  bubble: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-  },
-});

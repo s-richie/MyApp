@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { View, Text, Switch, Pressable, Modal, Alert, StyleSheet } from "react-native";
-import { useTheme, Colors } from "./app-theme";
+import { View, Switch, Pressable, Modal, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
 import { useLock } from "./app-lock";
 import { PinDots, PinPad, PIN_LENGTH } from "./pin-pad";
+import { Card, T, IconCircle } from "./ui";
 
 type Flow = "set" | "change" | "remove";
 type Step = "current" | "new" | "confirm";
@@ -20,7 +22,6 @@ export function SecurityCard() {
     checkPin,
     setBiometric,
   } = useLock();
-  const s = makeStyles(colors);
 
   const [flow, setFlow] = useState<Flow | null>(null);
   const [step, setStep] = useState<Step>("new");
@@ -101,16 +102,12 @@ export function SecurityCard() {
       : t("Enter the PIN again to confirm");
 
   return (
-    <View style={s.card}>
-      <Text style={s.title}>{t("Security")}</Text>
-
-      <View style={s.row}>
-        <View style={{ flex: 1 }}>
-          <Text style={s.label}>{t("PIN lock")}</Text>
-          <Text style={s.small}>
-            {t("Asks for your PIN when you open the app and after 30 seconds away.")}
-          </Text>
-        </View>
+    <Card>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <IconCircle name="lock-closed" size={40} color={colors.blue} />
+        <T kind="title" style={{ flex: 1 }}>
+          {t("PIN lock")}
+        </T>
         <Switch
           value={hasPin}
           onValueChange={(v) => start(v ? "set" : "remove")}
@@ -119,17 +116,32 @@ export function SecurityCard() {
       </View>
 
       {hasPin && (
-        <Pressable style={s.linkBtn} onPress={() => start("change")}>
-          <Text style={s.linkText}>{t("Change PIN")}</Text>
+        <Pressable
+          onPress={() => start("change")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            marginTop: 14,
+          }}
+        >
+          <IconCircle name="key" size={40} color={colors.blue} />
+          <T style={{ flex: 1 }}>{t("Change PIN")}</T>
+          <Ionicons name="chevron-forward" size={20} color={colors.subtext} />
         </Pressable>
       )}
 
       {hasPin && biometricAvailable && (
-        <View style={[s.row, { marginTop: 12 }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.label}>{t("Unlock with fingerprint")}</Text>
-            <Text style={s.small}>{t("You can always use your PIN instead.")}</Text>
-          </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            marginTop: 14,
+          }}
+        >
+          <IconCircle name="finger-print" size={40} color={colors.blue} />
+          <T style={{ flex: 1 }}>{t("Unlock with fingerprint")}</T>
           <Switch
             value={biometricEnabled}
             onValueChange={setBiometric}
@@ -138,58 +150,48 @@ export function SecurityCard() {
         </View>
       )}
 
-      <Text style={[s.small, { marginTop: 12 }]}>
-        {t(
-          "⚠️ If you forget your PIN, the only way back in is to clear the app's data, which also erases your entries. Make a CSV backup in Export & share first."
-        )}
-      </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          gap: 8,
+          marginTop: 14,
+        }}
+      >
+        <Ionicons name="information-circle" size={18} color={colors.subtext} />
+        <T kind="muted" style={{ flex: 1 }}>
+          {t("If you forget your PIN, app data must be cleared. Export a CSV first.")}
+        </T>
+      </View>
 
       <Modal visible={flow !== null} animationType="slide" onRequestClose={close}>
-        <View style={s.modal}>
-          <Text style={s.modalTitle}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: colors.background,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <T kind="big" style={{ fontSize: 22, marginBottom: 6 }}>
             {flow === "set"
               ? t("Set a PIN")
               : flow === "change"
               ? t("Change PIN")
               : t("Turn off PIN lock")}
-          </Text>
-          <Text style={{ color: error ? colors.red : colors.subtext }}>
-            {error || heading}
-          </Text>
+          </T>
+          <T color={error ? colors.red : colors.subtext}>{error || heading}</T>
 
           <PinDots count={entered.length} error={!!error} />
           <PinPad onDigit={onDigit} onDelete={onDelete} />
 
           <Pressable onPress={close} style={{ marginTop: 12, padding: 10 }}>
-            <Text style={{ color: colors.subtext, fontSize: 16 }}>{t("Cancel")}</Text>
+            <T color={colors.subtext} style={{ fontSize: 16 }}>
+              {t("Cancel")}
+            </T>
           </Pressable>
         </View>
       </Modal>
-    </View>
+    </Card>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      marginTop: 12,
-    },
-    title: { color: c.text, fontSize: 16, fontWeight: "bold", marginBottom: 8 },
-    row: { flexDirection: "row", alignItems: "center", gap: 12 },
-    label: { color: c.text, fontSize: 15, fontWeight: "600" },
-    small: { color: c.subtext, fontSize: 13, marginTop: 4 },
-    linkBtn: { marginTop: 10, paddingVertical: 6 },
-    linkText: { color: c.green, fontWeight: "bold" },
-    modal: {
-      flex: 1,
-      backgroundColor: c.background,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    modalTitle: { color: c.text, fontSize: 22, fontWeight: "bold", marginBottom: 6 },
-  });
