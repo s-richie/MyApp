@@ -1,16 +1,7 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  FlatList,
-  Alert,
-  Modal,
-  StyleSheet,
-} from "react-native";
+import { View, Pressable, FlatList, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme, Colors } from "../app-theme";
+import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
 import {
   useData,
@@ -23,6 +14,18 @@ import {
 } from "../app-data";
 import { MonthPicker } from "../month-picker";
 import { WalletPicker } from "../wallet-picker";
+import {
+  Row,
+  Field,
+  Chip,
+  Chips,
+  Sheet,
+  EmptyState,
+  entryIcon,
+  entryTitle,
+  safeIcon,
+  peso,
+} from "../ui";
 
 type Filter = "all" | Kind;
 
@@ -36,12 +39,11 @@ export default function History() {
   const { colors } = useTheme();
   const { t, fdate } = useI18n();
   const { monthEntries, deleteEntry, updateEntry, goals, wallets } = useData();
-  const s = makeStyles(colors);
 
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
 
-  // edit modal state
+  // edit sheet
   const [editing, setEditing] = useState<Entry | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editNote, setEditNote] = useState("");
@@ -95,214 +97,89 @@ export default function History() {
   };
 
   return (
-    <View style={s.container}>
+    <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
       <MonthPicker />
 
-      <TextInput
-        style={s.search}
-        placeholder={t("Search note, category, wallet or amount")}
-        placeholderTextColor={colors.subtext}
-        value={search}
-        onChangeText={setSearch}
-      />
+      <Field placeholder={t("Search")} value={search} onChangeText={setSearch} />
 
-      <View style={s.filters}>
+      <Chips>
         {FILTERS.map((f) => (
-          <Pressable
+          <Chip
             key={f.key}
+            label={t(f.label)}
+            active={filter === f.key}
             onPress={() => setFilter(f.key)}
-            style={[s.chip, filter === f.key && s.chipActive]}
-          >
-            <Text style={[s.chipText, filter === f.key && s.chipTextActive]}>
-              {t(f.label)}
-            </Text>
-          </Pressable>
+          />
         ))}
-      </View>
-
-      <Text style={s.hint}>{t("Tap an entry to edit it.")}</Text>
+      </Chips>
 
       <FlatList
         data={shown}
         keyExtractor={(e) => e.id}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          <Text style={s.empty}>
-            {q ? t("No matches found.") : t("Nothing here yet.")}
-          </Text>
+          <EmptyState
+            icon="document-text-outline"
+            text={q ? t("No matches found.") : t("Nothing here yet.")}
+          />
         }
         renderItem={({ item }) => {
           const isIpon = item.kind === "ipon";
-          const cat = categoryOf(item.category);
-          const g = goalOf(item);
           const w = walletOf(item);
           return (
-            <View style={s.row}>
-              <Pressable style={s.rowMain} onPress={() => openEdit(item)}>
-                <Text style={s.emoji}>{isIpon ? g?.emoji ?? "💰" : cat.emoji}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.note}>{item.note || labelOf(item)}</Text>
-                  <Text style={s.date}>
-                    {labelOf(item)} • {w?.emoji} {w?.name} • {fdate(item.date, true)}
-                  </Text>
-                </View>
-                <Text
-                  style={[s.amount, { color: isIpon ? colors.green : colors.red }]}
-                >
-                  {isIpon ? "+" : "-"}₱{item.amount.toLocaleString()}
-                </Text>
-              </Pressable>
-              <Pressable onPress={() => confirmDelete(item.id)} hitSlop={10}>
-                <Ionicons name="trash-outline" size={20} color={colors.subtext} />
-              </Pressable>
-            </View>
+            <Row
+              icon={entryIcon(item, goals)}
+              tone={isIpon ? colors.green : colors.red}
+              title={entryTitle(item, goals, t)}
+              sub={`${labelOf(item)} • ${w?.name ?? ""} • ${fdate(item.date, true)}`}
+              amount={`${isIpon ? "+" : "-"}${peso(item.amount)}`}
+              onPress={() => openEdit(item)}
+              trailing={
+                <Pressable onPress={() => confirmDelete(item.id)} hitSlop={10}>
+                  <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+                </Pressable>
+              }
+            />
           );
         }}
       />
 
-      {/* Edit modal */}
-      <Modal
+      {/* Edit sheet */}
+      <Sheet
         visible={editing !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditing(null)}
+        title={editing?.kind === "ipon" ? t("Edit ipon") : t("Edit expense")}
+        onClose={() => setEditing(null)}
+        onSave={saveEdit}
       >
-        <View style={s.overlay}>
-          <View style={s.modal}>
-            <Text style={s.modalTitle}>
-              {editing?.kind === "ipon" ? t("Edit ipon") : t("Edit expense")}
-            </Text>
+        <Field
+          placeholder={t("Amount")}
+          value={editAmount}
+          onChangeText={setEditAmount}
+          keyboardType="numeric"
+        />
+        <Field
+          placeholder={t("Note (optional)")}
+          value={editNote}
+          onChangeText={setEditNote}
+        />
 
-            <TextInput
-              style={s.input}
-              placeholder={t("Amount")}
-              placeholderTextColor={colors.subtext}
-              value={editAmount}
-              onChangeText={setEditAmount}
-              keyboardType="numeric"
-            />
-            <TextInput
-              style={s.input}
-              placeholder={t("Note (optional)")}
-              placeholderTextColor={colors.subtext}
-              value={editNote}
-              onChangeText={setEditNote}
-            />
+        {editing?.kind === "gastos" && (
+          <Chips>
+            {CATEGORIES.map((c) => (
+              <Chip
+                key={c.key}
+                label={t(c.label)}
+                icon={safeIcon(c.icon, "apps")}
+                active={editCategory === c.key}
+                color={colors.blue}
+                onPress={() => setEditCategory(c.key)}
+              />
+            ))}
+          </Chips>
+        )}
 
-            {editing?.kind === "gastos" && (
-              <View style={s.chips}>
-                {CATEGORIES.map((c) => (
-                  <Pressable
-                    key={c.key}
-                    onPress={() => setEditCategory(c.key)}
-                    style={[s.chip, editCategory === c.key && s.chipActive]}
-                  >
-                    <Text
-                      style={[
-                        s.chipText,
-                        editCategory === c.key && s.chipTextActive,
-                      ]}
-                    >
-                      {c.emoji} {t(c.label)}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-
-            <WalletPicker value={editWallet} onChange={setEditWallet} />
-
-            <View style={s.modalButtons}>
-              <Pressable
-                style={[s.modalBtn, { backgroundColor: colors.barBg }]}
-                onPress={() => setEditing(null)}
-              >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>
-                  {t("Cancel")}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[s.modalBtn, { backgroundColor: colors.green }]}
-                onPress={saveEdit}
-              >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("Save")}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        <WalletPicker value={editWallet} onChange={setEditWallet} />
+      </Sheet>
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: c.background },
-    search: {
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.inputBg,
-      color: c.text,
-      borderRadius: 10,
-      padding: 10,
-      marginBottom: 10,
-    },
-    filters: { flexDirection: "row", gap: 8, marginBottom: 8 },
-    hint: { color: c.subtext, fontSize: 12, marginBottom: 4 },
-    chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
-    chip: {
-      paddingVertical: 6,
-      paddingHorizontal: 14,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.card,
-    },
-    chipActive: { backgroundColor: c.green, borderColor: c.green },
-    chipText: { color: c.text },
-    chipTextActive: { color: "#fff", fontWeight: "bold" },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderColor: c.border,
-    },
-    rowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
-    emoji: { fontSize: 22 },
-    note: { color: c.text, fontSize: 16 },
-    date: { color: c.subtext, fontSize: 12, marginTop: 2 },
-    amount: { fontWeight: "bold", fontSize: 16 },
-    empty: { color: c.subtext, textAlign: "center", marginTop: 32 },
-    overlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      padding: 24,
-    },
-    modal: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    modalTitle: { color: c.text, fontSize: 18, fontWeight: "bold", marginBottom: 8 },
-    input: {
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.inputBg,
-      color: c.text,
-      borderRadius: 8,
-      padding: 10,
-      marginVertical: 6,
-    },
-    modalButtons: { flexDirection: "row", gap: 12, marginTop: 12 },
-    modalBtn: {
-      flex: 1,
-      padding: 12,
-      borderRadius: 8,
-      alignItems: "center",
-    },
-  });

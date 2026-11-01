@@ -1,8 +1,10 @@
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { useTheme, Colors } from "../app-theme";
+import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
 import { useData } from "../app-data";
 import { BotTip, computeStreak, dayKey, BADGES } from "../ipon-bot";
+import { Screen, Card, T, Progress, IconCircle } from "../ui";
 
 type Challenge = {
   title: string;
@@ -16,7 +18,6 @@ export default function Bot() {
   const { colors } = useTheme();
   const { t } = useI18n();
   const { entries } = useData();
-  const s = makeStyles(colors);
 
   const streak = computeStreak(entries);
 
@@ -70,19 +71,19 @@ export default function Bot() {
   const challenges: Challenge[] = [
     {
       title: "₱20 a day",
-      desc: "Save at least ₱20 on 30 different days (last 30 days).",
+      desc: "Save ₱20 or more on 30 days.",
       value: daily20,
       target: 30,
     },
     {
       title: "No-spend days",
-      desc: "Get 5 days this month with no expenses.",
+      desc: "5 days this month with no gastos.",
       value: noSpend,
       target: 5,
     },
     {
       title: "₱500 this month",
-      desc: "Save a total of ₱500 this month.",
+      desc: "Save ₱500 this month.",
       value: monthIpon,
       target: 500,
       money: true,
@@ -92,103 +93,82 @@ export default function Bot() {
   const dayWord = (n: number) => t(n === 1 ? "day" : "days");
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={s.container}
-    >
+    <Screen>
       <BotTip />
 
       {/* Streak */}
-      <View style={s.card}>
-        <Text style={s.label}>{t("Ipon streak")}</Text>
-        <Text style={s.big}>
-          🔥 {streak.current} {dayWord(streak.current)}
-        </Text>
-        <Text style={s.small}>
+      <Card>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <IconCircle name="flame" size={52} color="#f97316" />
+          <View>
+            <T kind="muted">{t("Ipon streak")}</T>
+            <T kind="big">
+              {streak.current} {dayWord(streak.current)}
+            </T>
+          </View>
+        </View>
+        <T kind="muted" style={{ marginTop: 10 }}>
           {t("Best streak: {n} {d}", { n: streak.best, d: dayWord(streak.best) })}
-          {" · "}
-          {streak.today ? t("You saved today! ✅") : t("Save today to keep it going")}
-        </Text>
-      </View>
+          {"  •  "}
+          {streak.today ? t("Saved today") : t("Save today to keep it going")}
+        </T>
+      </Card>
 
       {/* Badges */}
-      <View style={s.card}>
-        <Text style={s.label}>{t("Badges")}</Text>
-        <View style={s.badges}>
+      <Card>
+        <T kind="label">{t("Badges")}</T>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 12,
+          }}
+        >
           {BADGES.map((b) => {
             const earned = streak.best >= b.days;
             return (
-              <View key={b.days} style={[s.badge, { opacity: earned ? 1 : 0.3 }]}>
-                <Text style={{ fontSize: 34 }}>{b.emoji}</Text>
-                <Text style={s.badgeLabel}>{t(b.label)}</Text>
+              <View
+                key={b.days}
+                style={{ alignItems: "center", flex: 1, opacity: earned ? 1 : 0.3 }}
+              >
+                <IconCircle name={b.icon} color={b.color} size={52} />
+                <T kind="muted" style={{ marginTop: 6 }}>
+                  {t(b.label)}
+                </T>
               </View>
             );
           })}
         </View>
-        <Text style={s.small}>{t("Badges unlock from your best ipon streak.")}</Text>
-      </View>
+      </Card>
 
       {/* Challenges */}
-      <Text style={s.section}>{t("Challenges")}</Text>
+      <T kind="title" style={{ marginBottom: 10 }}>
+        {t("Challenges")}
+      </T>
       {challenges.map((c) => {
         const pct = Math.min(c.value / c.target, 1);
         const done = c.value >= c.target;
         const fmt = (n: number) => (c.money ? `₱${n.toLocaleString()}` : `${n}`);
         return (
-          <View key={c.title} style={s.card}>
-            <View style={s.head}>
-              <Text style={s.title}>{t(c.title)}</Text>
-              <Text style={s.title}>
+          <Card key={c.title}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <T kind="title" style={{ flex: 1 }}>
+                {t(c.title)}
+              </T>
+              {done ? (
+                <Ionicons name="checkmark-circle" size={22} color={colors.green} />
+              ) : null}
+              <T kind="label">
                 {fmt(Math.min(c.value, c.target))} / {fmt(c.target)}
-              </Text>
+              </T>
             </View>
-            <Text style={s.small}>{t(c.desc)}</Text>
-            <View style={s.barBg}>
-              <View
-                style={[
-                  s.barFill,
-                  { width: `${pct * 100}%`, backgroundColor: done ? colors.green : colors.blue },
-                ]}
-              />
-            </View>
-            {done && (
-              <Text style={[s.small, { color: colors.green }]}>
-                {t("Challenge complete! 🎉")}
-              </Text>
-            )}
-          </View>
+            <T kind="muted" style={{ marginTop: 4 }}>
+              {done ? t("Done") : t(c.desc)}
+            </T>
+            <Progress value={pct} color={done ? colors.green : colors.blue} />
+          </Card>
         );
       })}
-    </ScrollView>
+    </Screen>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    container: { padding: 16, paddingBottom: 32 },
-    card: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      marginBottom: 12,
-    },
-    label: { fontSize: 14, color: c.subtext },
-    big: { fontSize: 32, fontWeight: "bold", color: c.text, marginTop: 4 },
-    small: { color: c.subtext, marginTop: 6, fontSize: 13 },
-    section: { fontSize: 16, fontWeight: "bold", color: c.text, marginBottom: 8 },
-    badges: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
-    badge: { alignItems: "center", flex: 1 },
-    badgeLabel: { color: c.text, fontSize: 12, marginTop: 4 },
-    head: { flexDirection: "row", justifyContent: "space-between" },
-    title: { color: c.text, fontSize: 15, fontWeight: "bold" },
-    barBg: {
-      height: 12,
-      backgroundColor: c.barBg,
-      borderRadius: 6,
-      marginTop: 10,
-      overflow: "hidden",
-    },
-    barFill: { height: 12, borderRadius: 6 },
-  });

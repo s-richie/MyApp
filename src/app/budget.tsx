@@ -1,17 +1,29 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
-import { useTheme, Colors } from "../app-theme";
+import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import { useData, CATEGORIES, categoryOf } from "../app-data";
+import { useData, CATEGORIES } from "../app-data";
 import { MonthPicker } from "../month-picker";
 import { WalletPicker } from "../wallet-picker";
+import {
+  Screen,
+  Card,
+  T,
+  Row,
+  Button,
+  Field,
+  Chip,
+  Chips,
+  entryIcon,
+  entryTitle,
+  safeIcon,
+  peso,
+} from "../ui";
 
 export default function Budget() {
   const { colors } = useTheme();
-  const { t } = useI18n();
-  const { monthEntries, addEntry, budget, setBudget, monthSpent, wallets } = useData();
-  const spent = monthSpent;
-  const s = makeStyles(colors);
+  const { t, fdate } = useI18n();
+  const { monthEntries, addEntry, budget, setBudget, monthSpent, wallets, goals } =
+    useData();
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -19,7 +31,7 @@ export default function Budget() {
   const [walletId, setWalletId] = useState("");
 
   const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
-  const remaining = (Number(budget) || 0) - spent;
+  const remaining = (Number(budget) || 0) - monthSpent;
   const recent = monthEntries.filter((e) => e.kind === "gastos").slice(0, 3);
 
   const handleAdd = () => {
@@ -31,110 +43,79 @@ export default function Budget() {
   };
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={s.container}
-      keyboardShouldPersistTaps="handled"
-    >
+    <Screen>
       <MonthPicker />
 
-      <Text style={s.label}>{t("Monthly budget (₱)")}</Text>
-      <TextInput style={s.input} value={budget} onChangeText={setBudget} keyboardType="numeric" />
+      {/* Budget */}
+      <Card>
+        <T kind="label">{t("Monthly budget (₱)")}</T>
+        <Field value={budget} onChangeText={setBudget} keyboardType="numeric" />
+        <T kind="label" style={{ marginTop: 8 }}>
+          {t("Remaining")}
+        </T>
+        <T kind="big" color={remaining < 0 ? colors.red : undefined}>
+          {peso(remaining)}
+        </T>
+        <T kind="muted">
+          {t("Spent: ₱{n}", { n: monthSpent.toLocaleString() })}
+        </T>
+      </Card>
 
-      <Text style={s.label}>{t("Remaining")}</Text>
-      <Text style={[s.big, remaining < 0 && { color: colors.red }]}>
-        ₱{remaining.toLocaleString()}
-      </Text>
-      <Text style={s.small}>{t("Spent: ₱{n}", { n: spent.toLocaleString() })}</Text>
+      {/* Add gastos */}
+      <Card>
+        <T kind="title">{t("Add gastos")}</T>
+        <Chips>
+          {CATEGORIES.map((c) => (
+            <Chip
+              key={c.key}
+              label={t(c.label)}
+              icon={safeIcon(c.icon, "apps")}
+              active={category === c.key}
+              color={colors.blue}
+              onPress={() => setCategory(c.key)}
+            />
+          ))}
+        </Chips>
+        <WalletPicker value={activeWallet} onChange={setWalletId} />
+        <Field
+          placeholder={t("Amount")}
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="numeric"
+        />
+        <Field
+          placeholder={t("Note (optional)")}
+          value={note}
+          onChangeText={setNote}
+        />
+        <Button
+          label={t("Add gastos")}
+          icon="remove-circle"
+          color={colors.blue}
+          onPress={handleAdd}
+        />
+      </Card>
 
-      <Text style={s.label}>{t("Category")}</Text>
-      <View style={s.chips}>
-        {CATEGORIES.map((c) => (
-          <Pressable
-            key={c.key}
-            onPress={() => setCategory(c.key)}
-            style={[s.chip, category === c.key && s.chipActive]}
-          >
-            <Text style={[s.chipText, category === c.key && s.chipTextActive]}>
-              {c.emoji} {t(c.label)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <WalletPicker value={activeWallet} onChange={setWalletId} />
-
-      <TextInput
-        style={s.input}
-        placeholder={t("Amount")}
-        placeholderTextColor={colors.subtext}
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={s.input}
-        placeholder={t("Note (optional)")}
-        placeholderTextColor={colors.subtext}
-        value={note}
-        onChangeText={setNote}
-      />
-      <Pressable style={s.button} onPress={handleAdd}>
-        <Text style={s.buttonText}>{t("Add gastos")}</Text>
-      </Pressable>
-
-      <Text style={s.section}>{t("Recent")}</Text>
-      {recent.length === 0 ? (
-        <Text style={s.small}>{t("No expenses this month yet.")}</Text>
-      ) : (
-        recent.map((item) => {
-          const cat = categoryOf(item.category);
-          return (
-            <View key={item.id} style={s.row}>
-              <Text style={s.rowText}>
-                {cat.emoji} {item.note || t(cat.label)}
-              </Text>
-              <Text style={s.amount}>-₱{item.amount.toLocaleString()}</Text>
-            </View>
-          );
-        })
-      )}
-      <Text style={s.small}>{t("See everything in the History tab.")}</Text>
-    </ScrollView>
+      {/* Recent */}
+      <Card>
+        <T kind="label">{t("Recent")}</T>
+        {recent.length === 0 ? (
+          <T kind="muted" style={{ marginTop: 8 }}>
+            {t("No expenses this month yet.")}
+          </T>
+        ) : (
+          recent.map((e) => (
+            <Row
+              key={e.id}
+              icon={entryIcon(e, goals)}
+              tone={colors.red}
+              title={entryTitle(e, goals, t)}
+              sub={fdate(e.date)}
+              amount={`-${peso(e.amount)}`}
+            />
+          ))
+        )}
+      </Card>
+    </Screen>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    container: { padding: 16 },
-    label: { fontSize: 14, color: c.subtext },
-    section: { fontSize: 16, fontWeight: "bold", color: c.text, marginTop: 8 },
-    input: {
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.inputBg,
-      color: c.text,
-      borderRadius: 8,
-      padding: 10,
-      marginVertical: 6,
-    },
-    big: { fontSize: 36, fontWeight: "bold", color: c.text },
-    small: { color: c.subtext, marginBottom: 12, marginTop: 4 },
-    chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
-    chip: {
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.card,
-    },
-    chipActive: { backgroundColor: c.blue, borderColor: c.blue },
-    chipText: { color: c.text },
-    chipTextActive: { color: "#fff", fontWeight: "bold" },
-    button: { backgroundColor: c.blue, padding: 12, borderRadius: 8, alignItems: "center", marginVertical: 8 },
-    buttonText: { color: "#fff", fontWeight: "bold" },
-    row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderColor: c.border },
-    rowText: { color: c.text },
-    amount: { color: c.red, fontWeight: "bold" },
-  });

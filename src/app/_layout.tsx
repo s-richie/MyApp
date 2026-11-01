@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from "../app-theme";
 import { DataProvider } from "../app-data";
 import { LockProvider } from "../app-lock";
 import { LanguageProvider, useI18n } from "../i18n";
+import { Welcome } from "../welcome";
 
 function Splash({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
@@ -73,19 +74,18 @@ function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: t("Dashboard"),
-          tabBarLabel: t("Home"),
-          headerTitle: () => <HeaderTitle title={t("Dashboard")} />,
+          title: "Home",
+          headerTitle: () => <HeaderTitle title="Ipon Bot" />,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid" size={size} color={color} />
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="ipon"
         options={{
-          title: t("Ipon"),
-          headerTitle: () => <HeaderTitle title={t("Ipon")} />,
+          title: "Ipon",
+          headerTitle: () => <HeaderTitle title="Ipon" />,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="wallet" size={size} color={color} />
           ),
@@ -94,8 +94,8 @@ function TabsLayout() {
       <Tabs.Screen
         name="budget"
         options={{
-          title: t("Budget"),
-          headerTitle: () => <HeaderTitle title={t("Budget")} />,
+          title: "Budget",
+          headerTitle: () => <HeaderTitle title="Budget" />,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="receipt" size={size} color={color} />
           ),
@@ -105,18 +105,9 @@ function TabsLayout() {
         name="history"
         options={{
           title: t("History"),
+          headerTitle: () => <HeaderTitle title={t("History")} />,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="utang"
-        options={{
-          title: t("Utang & Ambagan"),
-          tabBarLabel: t("Utang"),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
+            <Ionicons name="time" size={size} color={color == null ? undefined : String(color)} />
           ),
         }}
       />
@@ -124,13 +115,15 @@ function TabsLayout() {
         name="more"
         options={{
           title: t("More"),
+          headerTitle: () => <HeaderTitle title={t("More")} />,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
           ),
         }}
       />
 
-      {/* These screens open from inside the More tab, so they stay out of the tab bar */}
+      {/* These open from inside the More tab, so they stay out of the tab bar */}
+      <Tabs.Screen name="utang" options={{ href: null }} />
       <Tabs.Screen name="bot" options={{ href: null }} />
       <Tabs.Screen name="recurring" options={{ href: null }} />
       <Tabs.Screen name="export" options={{ href: null }} />
@@ -150,7 +143,10 @@ export default function Layout() {
         <ThemeProvider>
           <LockProvider>
             <DataProvider>
-              <TabsLayout />
+              <View style={{ flex: 1 }}>
+                <TabsLayout />
+                <Welcome />
+              </View>
             </DataProvider>
           </LockProvider>
         </ThemeProvider>

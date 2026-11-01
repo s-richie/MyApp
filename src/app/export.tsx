@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, Share, Alert, StyleSheet } from "react-native";
-import { useTheme, Colors } from "../app-theme";
+import { Share, Alert } from "react-native";
 import { useI18n } from "../i18n";
 import {
   useData,
@@ -9,6 +8,7 @@ import {
   DEFAULT_WALLET_ID,
 } from "../app-data";
 import { MonthPicker } from "../month-picker";
+import { Screen, Card, T, Button, Chip, Chips } from "../ui";
 
 type Range = "month" | "all";
 
@@ -21,7 +21,6 @@ const csvCell = (v: string | number) =>
   typeof v === "number" ? String(v) : `"${v.replace(/"/g, '""')}"`;
 
 export default function ExportScreen() {
-  const { colors } = useTheme();
   const { t, localizeMonth } = useI18n();
   const {
     entries,
@@ -33,7 +32,6 @@ export default function ExportScreen() {
     goals,
     wallets,
   } = useData();
-  const s = makeStyles(colors);
   const [range, setRange] = useState<Range>("month");
 
   const list = (range === "all" ? entries : monthEntries)
@@ -59,7 +57,7 @@ export default function ExportScreen() {
   const buildSummary = () => {
     const budgetNum = Number(budget) || 0;
     const lines = [
-      t("💰 Ipon Bot — {month}", { month: localizeMonth(monthLabel) }),
+      t("Ipon Bot — {month}", { month: localizeMonth(monthLabel) }),
       "",
       t("Saved: ₱{n}", { n: monthSaved.toLocaleString() }),
       t("Spent: ₱{n}", { n: monthSpent.toLocaleString() }),
@@ -84,8 +82,7 @@ export default function ExportScreen() {
     if (cats.length > 0) {
       lines.push("", t("Where the money went:"));
       cats.forEach(([key, value]) => {
-        const c = categoryOf(key);
-        lines.push(`${c.emoji} ${t(c.label)}: ₱${value.toLocaleString()}`);
+        lines.push(`- ${t(categoryOf(key).label)}: ₱${value.toLocaleString()}`);
       });
     }
     return lines.join("\n");
@@ -108,91 +105,42 @@ export default function ExportScreen() {
   };
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={s.container}
-    >
+    <Screen>
       {/* Monthly summary */}
-      <View style={s.card}>
-        <Text style={s.title}>{t("Monthly summary")}</Text>
-        <Text style={s.small}>
-          {t(
-            "A short text of the month you pick below: saved, spent, budget left and where the money went."
-          )}
-        </Text>
+      <Card>
+        <T kind="title">{t("Monthly summary")}</T>
+        <T> </T>
         <MonthPicker />
-        <Pressable style={s.button} onPress={() => share(buildSummary(), "Ipon Bot summary")}>
-          <Text style={s.buttonText}>{t("Share summary")}</Text>
-        </Pressable>
-      </View>
+        <Button
+          label={t("Share summary")}
+          icon="share-social"
+          onPress={() => share(buildSummary(), "Ipon Bot summary")}
+        />
+      </Card>
 
       {/* CSV */}
-      <View style={s.card}>
-        <Text style={s.title}>{t("Export entries (CSV)")}</Text>
-        <Text style={s.small}>
-          {t(
-            "Columns: Date, Type, Amount, Category / Goal, Wallet, Note. Paste it into a spreadsheet after sharing."
-          )}
-        </Text>
-
-        <View style={s.chips}>
+      <Card>
+        <T kind="title">{t("Export entries (CSV)")}</T>
+        <Chips>
           {(["month", "all"] as Range[]).map((r) => (
-            <Pressable
+            <Chip
               key={r}
+              label={r === "month" ? localizeMonth(monthLabel) : t("All time")}
+              active={range === r}
               onPress={() => setRange(r)}
-              style={[s.chip, range === r && s.chipActive]}
-            >
-              <Text style={[s.chipText, range === r && s.chipTextActive]}>
-                {r === "month" ? localizeMonth(monthLabel) : t("All time")}
-              </Text>
-            </Pressable>
+            />
           ))}
-        </View>
-        <Text style={s.small}>
-          {t(list.length === 1 ? "{n} entry will be exported." : "{n} entries will be exported.", {
-            n: list.length,
-          })}
-        </Text>
-
-        <Pressable style={s.button} onPress={shareCsv}>
-          <Text style={s.buttonText}>{t("Share CSV")}</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+        </Chips>
+        <T kind="muted">
+          {t(
+            list.length === 1
+              ? "{n} entry will be exported."
+              : "{n} entries will be exported.",
+            { n: list.length }
+          )}
+        </T>
+        <Button label={t("Share CSV")} icon="document-text" onPress={shareCsv} />
+      </Card>
+    </Screen>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    container: { padding: 16, paddingBottom: 32 },
-    card: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      marginBottom: 12,
-    },
-    title: { color: c.text, fontSize: 16, fontWeight: "bold" },
-    small: { color: c.subtext, fontSize: 13, marginTop: 4, marginBottom: 8 },
-    chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
-    chip: {
-      paddingVertical: 6,
-      paddingHorizontal: 14,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-      backgroundColor: c.background,
-    },
-    chipActive: { backgroundColor: c.green, borderColor: c.green },
-    chipText: { color: c.text },
-    chipTextActive: { color: "#fff", fontWeight: "bold" },
-    button: {
-      backgroundColor: c.green,
-      padding: 12,
-      borderRadius: 8,
-      alignItems: "center",
-      marginTop: 4,
-    },
-    buttonText: { color: "#fff", fontWeight: "bold" },
-  });

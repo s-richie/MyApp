@@ -14,17 +14,20 @@ export type Entry = {
   walletId?: string;
 };
 
+// "icon" is an Ionicons name. "emoji" is only read from old saved data.
 export type Goal = {
   id: string;
   name: string;
-  emoji: string;
+  icon?: string;
+  emoji?: string;
   target: number;
 };
 
 export type Wallet = {
   id: string;
   name: string;
-  emoji: string;
+  icon?: string;
+  emoji?: string;
   start: number; // starting balance
 };
 
@@ -75,17 +78,19 @@ export type NewRecurring = {
 
 export const DEFAULT_GOAL_ID = "default";
 export const DEFAULT_WALLET_ID = "cash";
+
+// Kept so screens that are not redesigned yet still work
 export const GOAL_EMOJIS = ["🎯", "💻", "📱", "✈️", "🏠", "🚲", "🎓", "🎁"];
 export const WALLET_EMOJIS = ["💵", "📱", "💜", "🏦", "💳", "👛", "🐷", "🎒"];
 
 export const CATEGORIES = [
-  { key: "food", label: "Food", emoji: "🍔" },
-  { key: "fare", label: "Fare", emoji: "🚌" },
-  { key: "load", label: "Load", emoji: "📱" },
-  { key: "school", label: "School", emoji: "📚" },
-  { key: "bills", label: "Bills", emoji: "🧾" },
-  { key: "shopping", label: "Shopping", emoji: "🛍️" },
-  { key: "other", label: "Other", emoji: "📦" },
+  { key: "food", label: "Food", icon: "restaurant", emoji: "🍔" },
+  { key: "fare", label: "Fare", icon: "bus", emoji: "🚌" },
+  { key: "load", label: "Load", icon: "call", emoji: "📱" },
+  { key: "school", label: "School", icon: "book", emoji: "📚" },
+  { key: "bills", label: "Bills", icon: "receipt", emoji: "🧾" },
+  { key: "shopping", label: "Shopping", icon: "bag-handle", emoji: "🛍️" },
+  { key: "other", label: "Other", icon: "apps", emoji: "📦" },
 ];
 
 export const categoryOf = (key?: string) =>
@@ -94,8 +99,8 @@ export const categoryOf = (key?: string) =>
 type EntryPatch = Partial<
   Pick<Entry, "amount" | "note" | "category" | "walletId">
 >;
-type GoalPatch = Partial<Pick<Goal, "name" | "emoji" | "target">>;
-type WalletPatch = Partial<Pick<Wallet, "name" | "emoji" | "start">>;
+type GoalPatch = Partial<Pick<Goal, "name" | "icon" | "emoji" | "target">>;
+type WalletPatch = Partial<Pick<Wallet, "name" | "icon" | "emoji" | "start">>;
 
 type DataContextType = {
   entries: Entry[];
@@ -110,12 +115,12 @@ type DataContextType = {
   updateEntry: (id: string, patch: EntryPatch) => void;
   deleteEntry: (id: string) => void;
   goals: Goal[];
-  addGoal: (name: string, emoji: string, target: number) => string;
+  addGoal: (name: string, icon: string, target: number) => string;
   updateGoal: (id: string, patch: GoalPatch) => void;
   deleteGoal: (id: string) => void;
   goalSaved: (goalId: string) => number;
   wallets: Wallet[];
-  addWallet: (name: string, emoji: string, start: number) => void;
+  addWallet: (name: string, icon: string, start: number) => void;
   updateWallet: (id: string, patch: WalletPatch) => void;
   deleteWallet: (id: string) => void;
   walletBalance: (walletId: string) => number;
@@ -234,11 +239,11 @@ const DataContext = createContext<DataContextType | null>(null);
 export function DataProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [goals, setGoals] = useState<Goal[]>([
-    { id: DEFAULT_GOAL_ID, name: "My Ipon", emoji: "🎯", target: 10000 },
+    { id: DEFAULT_GOAL_ID, name: "My Ipon", icon: "flag", target: 10000 },
   ]);
   const [wallets, setWallets] = useState<Wallet[]>([
-    { id: DEFAULT_WALLET_ID, name: "Cash", emoji: "💵", start: 0 },
-    { id: "gcash", name: "GCash", emoji: "📱", start: 0 },
+    { id: DEFAULT_WALLET_ID, name: "Cash", icon: "cash", start: 0 },
+    { id: "gcash", name: "GCash", icon: "phone-portrait", start: 0 },
   ]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [recurring, setRecurring] = useState<Recurring[]>([]);
@@ -274,7 +279,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
               {
                 id: DEFAULT_GOAL_ID,
                 name: "My Ipon",
-                emoji: "🎯",
+                icon: "flag",
                 target: Number(d.goal) || 10000,
               },
             ]);
@@ -330,9 +335,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setEntries((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const addGoal = (name: string, emoji: string, target: number) => {
+  const addGoal = (name: string, icon: string, target: number) => {
     const id = makeId();
-    setGoals((prev) => [...prev, { id, name, emoji, target }]);
+    setGoals((prev) => [...prev, { id, name, icon, target }]);
     return id;
   };
 
@@ -349,9 +354,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .filter((e) => e.kind === "ipon" && (e.goalId ?? DEFAULT_GOAL_ID) === goalId)
       .reduce((a, e) => a + e.amount, 0);
 
-  const addWallet = (name: string, emoji: string, start: number) => {
+  const addWallet = (name: string, icon: string, start: number) => {
     const id = makeId();
-    setWallets((prev) => [...prev, { id, name, emoji, start }]);
+    setWallets((prev) => [...prev, { id, name, icon, start }]);
   };
 
   const updateWallet = (id: string, patch: WalletPatch) => {
