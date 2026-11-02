@@ -7,10 +7,10 @@ import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
 import { Screen, Card, T, IconCircle, Chip, Button, IconName } from "./ui";
 
-// Show notifications even while the app is open
+// Show notifications (with sound and vibration) even while the app is open
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,
     shouldShowList: true,
@@ -18,7 +18,10 @@ Notifications.setNotificationHandler({
 });
 
 const STORAGE_KEY = "iponbot:reminders:v1";
-const CHANNEL_ID = "reminders";
+// New channel id: Android cannot change a channel after it is created,
+// so this makes sure the vibration settings apply on updated installs too.
+const CHANNEL_ID = "reminders-v2";
+const VIBRATION = [0, 400, 200, 400];
 
 type Key = "ipon" | "gastos";
 type Rem = { on: boolean; hour: number; minute: number; id?: string };
@@ -56,8 +59,9 @@ async function ensureChannel() {
   try {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: "Reminders",
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 250, 250, 250],
+      importance: Notifications.AndroidImportance.HIGH,
+      enableVibrate: true,
+      vibrationPattern: VIBRATION,
       lightColor: "#16a34a",
       sound: "default",
     });
@@ -170,7 +174,11 @@ export default function RemindersScreen() {
           );
         } else {
           next.id = await Notifications.scheduleNotificationAsync({
-            content: { title: "Ipon Bot", body: INFO[key].body },
+            content: {
+              title: "Ipon Bot",
+              body: INFO[key].body,
+              vibrate: VIBRATION,
+            },
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.DAILY,
               hour: next.hour,
@@ -210,7 +218,11 @@ export default function RemindersScreen() {
         return;
       }
       await Notifications.scheduleNotificationAsync({
-        content: { title: "Ipon Bot", body: "It works! Reminders are ready." },
+        content: {
+          title: "Ipon Bot",
+          body: "It works! Reminders are ready.",
+          vibrate: VIBRATION,
+        },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: 5,

@@ -1,30 +1,32 @@
-import { useState } from "react";
-import { View, Switch, Pressable, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Alert, Pressable, Switch, View } from "react-native";
+import { AccountCard } from "../account-card";
+import { useData, Wallet } from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import { useData, Wallet } from "../app-data";
 import { SecurityCard } from "../security-card";
 import {
-  Screen,
   Card,
-  T,
-  IconCircle,
   Chip,
   Chips,
   Field,
-  Sheet,
-  IconPicker,
-  SectionHeader,
+  IconCircle,
   iconOf,
+  IconPicker,
   peso,
+  Screen,
+  SectionHeader,
+  Sheet,
+  T,
   WALLET_ICONS,
 } from "../ui";
 
 export default function Settings() {
   const { isDark, setDark, colors } = useTheme();
   const { t, lang, setLang } = useI18n();
-  const { wallets, addWallet, updateWallet, deleteWallet, walletBalance } = useData();
+  const { wallets, addWallet, updateWallet, deleteWallet, walletBalance } =
+    useData();
 
   const [sheet, setSheet] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,13 +71,20 @@ export default function Settings() {
       t("Its entries will be moved to another wallet."),
       [
         { text: t("Cancel"), style: "cancel" },
-        { text: t("Delete"), style: "destructive", onPress: () => deleteWallet(w.id) },
-      ]
+        {
+          text: t("Delete"),
+          style: "destructive",
+          onPress: () => deleteWallet(w.id),
+        },
+      ],
     );
   };
 
   return (
     <Screen>
+      {/* Account */}
+      <AccountCard />
+
       {/* Dark mode */}
       <Card>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -98,37 +107,57 @@ export default function Settings() {
           <T kind="title">{t("Language")}</T>
         </View>
         <Chips>
-          <Chip label="English" active={lang === "en"} onPress={() => setLang("en")} />
-          <Chip label="Filipino" active={lang === "fil"} onPress={() => setLang("fil")} />
+          <Chip
+            label="English"
+            active={lang === "en"}
+            onPress={() => setLang("en")}
+          />
+          <Chip
+            label="Filipino"
+            active={lang === "fil"}
+            onPress={() => setLang("fil")}
+          />
         </Chips>
       </Card>
 
-      {/* Security (redesigned in Part 3) */}
+      {/* Security */}
       <SecurityCard />
       <View style={{ height: 16 }} />
 
       {/* Wallets */}
-      <SectionHeader title={t("Wallets")} actionLabel={t("New")} onAction={openNew} />
+      <SectionHeader
+        title={t("Wallets")}
+        actionLabel={t("New")}
+        onAction={openNew}
+      />
 
       {wallets.map((w) => {
         const bal = walletBalance(w.id);
         return (
           <Card key={w.id}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
               <IconCircle name={iconOf(w, "wallet")} size={42} />
               <View style={{ flex: 1 }}>
                 <T kind="title" numberOfLines={1}>
                   {w.name}
                 </T>
-                <T kind="muted">
-                  {t("Start: {n}", { n: peso(w.start) })}
-                </T>
+                <T kind="muted">{t("Start: {n}", { n: peso(w.start) })}</T>
               </View>
               <Pressable onPress={() => openEdit(w)} hitSlop={10}>
-                <Ionicons name="create-outline" size={20} color={colors.subtext} />
+                <Ionicons
+                  name="create-outline"
+                  size={20}
+                  color={colors.subtext}
+                />
               </Pressable>
               <Pressable onPress={() => confirmDelete(w)} hitSlop={10}>
-                <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+                <Ionicons
+                  name="trash-outline"
+                  size={20}
+                  color={colors.subtext}
+                />
               </Pressable>
             </View>
             <T

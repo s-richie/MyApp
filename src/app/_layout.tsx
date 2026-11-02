@@ -1,42 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Image, Text, Animated, StyleSheet } from "react-native";
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { ThemeProvider, useTheme } from "../app-theme";
+import { Tabs } from "expo-router";
+import { useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { DataProvider } from "../app-data";
 import { LockProvider } from "../app-lock";
+import { ThemeProvider, useTheme } from "../app-theme";
+import { AuthGate, AuthProvider } from "../auth";
 import { LanguageProvider, useI18n } from "../i18n";
+import { Splash } from "../splash";
+import { SyncProvider } from "../sync";
 import { Welcome } from "../welcome";
-
-function Splash({ onDone }: { onDone: () => void }) {
-  const { t } = useI18n();
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.7)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start();
-
-    const timer = setTimeout(onDone, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <View style={s.splash}>
-      <Animated.View style={{ opacity, transform: [{ scale }], alignItems: "center" }}>
-        <Image
-          source={require("../../assets/images/splash-icon.png")}
-          style={s.logo}
-          resizeMode="contain"
-        />
-        <Text style={s.title}>Ipon Bot</Text>
-        <Text style={s.tagline}>{t("Save smart. Spend wise.")}</Text>
-      </Animated.View>
-    </View>
-  );
-}
 
 function HeaderTitle({ title }: { title: string }) {
   const { colors } = useTheme();
@@ -107,7 +80,7 @@ function TabsLayout() {
           title: t("History"),
           headerTitle: () => <HeaderTitle title={t("History")} />,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size} color={color == null ? undefined : String(color)} />
+            <Ionicons name="time" size={size} color={color} />
           ),
         }}
       />
@@ -117,7 +90,11 @@ function TabsLayout() {
           title: t("More"),
           headerTitle: () => <HeaderTitle title={t("More")} />,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
+            <Ionicons
+              name="ellipsis-horizontal-circle"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -142,12 +119,17 @@ export default function Layout() {
       ) : (
         <ThemeProvider>
           <LockProvider>
-            <DataProvider>
-              <View style={{ flex: 1 }}>
-                <TabsLayout />
-                <Welcome />
-              </View>
-            </DataProvider>
+            <AuthProvider>
+              <DataProvider>
+                <SyncProvider>
+                  <View style={{ flex: 1 }}>
+                    <TabsLayout />
+                    <AuthGate />
+                    <Welcome />
+                  </View>
+                </SyncProvider>
+              </DataProvider>
+            </AuthProvider>
           </LockProvider>
         </ThemeProvider>
       )}
@@ -156,15 +138,6 @@ export default function Layout() {
 }
 
 const s = StyleSheet.create({
-  splash: {
-    flex: 1,
-    backgroundColor: "#16a34a",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logo: { width: 220, height: 220 },
-  title: { color: "#fff", fontSize: 32, fontWeight: "bold", marginTop: 8 },
-  tagline: { color: "#dcfce7", fontSize: 16, marginTop: 4 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   headerLogo: { width: 40, height: 40 },
   headerText: { fontSize: 17, fontWeight: "600" },

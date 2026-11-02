@@ -139,21 +139,39 @@ export default function Dashboard() {
       </View>
 
       {/* Budget */}
-      <Card>
-        <T kind="label">{t("Budget left")}</T>
-        <T kind="big" color={over ? colors.red : undefined}>
-          {peso(remaining)}
-        </T>
-        <Progress value={used} color={over ? colors.red : colors.blue} />
-        <T kind="muted" style={{ marginTop: 8 }}>
-          {over
-            ? t("Over by {n}", { n: peso(Math.abs(remaining)) })
-            : t("{p}% used", { p: Math.round(used * 100) })}
-          {isCurrentMonth && !over && budgetNum > 0
-            ? `  •  ${t("{a} per day", { a: peso(perDay) })}`
-            : ""}
-        </T>
-      </Card>
+      {budgetNum > 0 ? (
+        <Card>
+          <T kind="label">{t("Budget left")}</T>
+          <T kind="big" color={over ? colors.red : undefined}>
+            {peso(remaining)}
+          </T>
+          <Progress value={used} color={over ? colors.red : colors.blue} />
+          <T kind="muted" style={{ marginTop: 8 }}>
+            {over
+              ? t("Over by {n}", { n: peso(Math.abs(remaining)) })
+              : t("{p}% used", { p: Math.round(used * 100) })}
+            {isCurrentMonth && !over
+              ? `  •  ${t("{a} per day", { a: peso(perDay) })}`
+              : ""}
+          </T>
+        </Card>
+      ) : (
+        <Card>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <IconCircle name="pie-chart" size={42} color={colors.blue} />
+            <T kind="title" style={{ flex: 1 }}>
+              {t("No budget set")}
+            </T>
+          </View>
+          <Button
+            label={t("Set budget")}
+            icon="create"
+            outline
+            color={colors.blue}
+            onPress={() => router.navigate("/budget" as any)}
+          />
+        </Card>
+      )}
 
       {/* Goals */}
       <Card>
