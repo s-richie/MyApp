@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { View, Image, Text, StyleSheet } from "react-native";
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { ThemeProvider, useTheme } from "../app-theme";
+import { Tabs } from "expo-router";
+import { useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { DataProvider } from "../app-data";
 import { LockProvider } from "../app-lock";
+import { ThemeProvider, useTheme } from "../app-theme";
+import { AuthGate, AuthProvider } from "../auth";
 import { LanguageProvider, useI18n } from "../i18n";
-import { Welcome } from "../welcome";
 import { Splash } from "../splash";
+import { SyncProvider } from "../sync";
+import { Welcome } from "../welcome";
 
 function HeaderTitle({ title }: { title: string }) {
   const { colors } = useTheme();
@@ -88,7 +90,11 @@ function TabsLayout() {
           title: t("More"),
           headerTitle: () => <HeaderTitle title={t("More")} />,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
+            <Ionicons
+              name="ellipsis-horizontal-circle"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -113,12 +119,17 @@ export default function Layout() {
       ) : (
         <ThemeProvider>
           <LockProvider>
-            <DataProvider>
-              <View style={{ flex: 1 }}>
-                <TabsLayout />
-                <Welcome />
-              </View>
-            </DataProvider>
+            <AuthProvider>
+              <DataProvider>
+                <SyncProvider>
+                  <View style={{ flex: 1 }}>
+                    <TabsLayout />
+                    <AuthGate />
+                    <Welcome />
+                  </View>
+                </SyncProvider>
+              </DataProvider>
+            </AuthProvider>
           </LockProvider>
         </ThemeProvider>
       )}

@@ -1,5 +1,11 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 export type Kind = "ipon" | "gastos";
 
@@ -76,6 +82,16 @@ export type NewRecurring = {
   day: number;
 };
 
+// Everything that is backed up to the cloud
+export type Snapshot = {
+  entries: Entry[];
+  goals: Goal[];
+  wallets: Wallet[];
+  debts: Debt[];
+  recurring: Recurring[];
+  budget: string;
+};
+
 export const DEFAULT_GOAL_ID = "default";
 export const DEFAULT_WALLET_ID = "cash";
 
@@ -110,7 +126,7 @@ type DataContextType = {
     amount: number,
     note: string,
     tag?: string,
-    walletId?: string
+    walletId?: string,
   ) => void;
   updateEntry: (id: string, patch: EntryPatch) => void;
   deleteEntry: (id: string) => void;
@@ -135,6 +151,7 @@ type DataContextType = {
   deleteRecurring: (id: string) => void;
   budget: string;
   setBudget: (value: string) => void;
+  replaceAll: (s: Partial<Snapshot>) => void;
   saved: number; // all-time ipon
   monthEntries: Entry[];
   monthSaved: number;
@@ -177,10 +194,20 @@ function firstOccurrence(frequency: Frequency, day: number, now: Date): Date {
 
 function advance(date: Date, r: Recurring): Date {
   if (r.frequency === "daily") {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 12);
+    return new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate() + 1,
+      12,
+    );
   }
   if (r.frequency === "weekly") {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 7, 12);
+    return new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate() + 7,
+      12,
+    );
   }
   const y = date.getFullYear();
   const nm = date.getMonth() + 1;
@@ -198,8 +225,8 @@ function entryFrom(r: Recurring, when: Date): Entry {
     ...(r.kind === "gastos"
       ? { category: r.tag ?? "other" }
       : r.tag
-      ? { goalId: r.tag }
-      : {}),
+        ? { goalId: r.tag }
+        : {}),
   };
 }
 
@@ -212,7 +239,7 @@ function runRecurring(list: Recurring[], now: Date) {
     23,
     59,
     59,
-    999
+    999,
   ).getTime();
 
   const created: Entry[] = [];
@@ -257,7 +284,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const d = JSON.parse(raw);
-          const savedEntries: Entry[] = Array.isArray(d.entries) ? d.entries : [];
+          const savedEntries: Entry[] = Array.isArray(d.entries)
+            ? d.entries
+            : [];
           const savedRecurring: Recurring[] = Array.isArray(d.recurring)
             ? d.recurring
             : [];
@@ -297,7 +326,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!loaded) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ entries, goals, budget, wallets, debts, recurring })
+      JSON.stringify({ entries, goals, budget, wallets, debts, recurring }),
     ).catch((e) => console.warn("Could not save data", e));
   }, [entries, goals, budget, wallets, debts, recurring, loaded]);
 
@@ -308,7 +337,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     amount: number,
     note: string,
     tag?: string,
-    walletId?: string
+    walletId?: string,
   ) => {
     const entry: Entry = {
       id: makeId(),
@@ -320,15 +349,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ...(kind === "gastos"
         ? { category: tag ?? "other" }
         : tag
-        ? { goalId: tag }
-        : {}),
+          ? { goalId: tag }
+          : {}),
     };
     setEntries((prev) => [entry, ...prev]);
     setSelectedMonth(currentMonth);
   };
 
   const updateEntry = (id: string, patch: EntryPatch) => {
-    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    setEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+    );
   };
 
   const deleteEntry = (id: string) => {
@@ -346,12 +377,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteGoal = (id: string) => {
-    setGoals((prev) => (prev.length <= 1 ? prev : prev.filter((g) => g.id !== id)));
+    setGoals((prev) =>
+      prev.length <= 1 ? prev : prev.filter((g) => g.id !== id),
+    );
   };
 
   const goalSaved = (goalId: string) =>
     entries
-      .filter((e) => e.kind === "ipon" && (e.goalId ?? DEFAULT_GOAL_ID) === goalId)
+      .filter(
+        (e) => e.kind === "ipon" && (e.goalId ?? DEFAULT_GOAL_ID) === goalId,
+      )
       .reduce((a, e) => a + e.amount, 0);
 
   const addWallet = (name: string, icon: string, start: number) => {
@@ -360,7 +395,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const updateWallet = (id: string, patch: WalletPatch) => {
-    setWallets((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+    setWallets((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, ...patch } : w)),
+    );
   };
 
   const deleteWallet = (id: string) => {
@@ -368,8 +405,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const fallback = wallets.find((w) => w.id !== id)!.id;
     setEntries((prev) =>
       prev.map((e) =>
-        (e.walletId ?? DEFAULT_WALLET_ID) === id ? { ...e, walletId: fallback } : e
-      )
+        (e.walletId ?? DEFAULT_WALLET_ID) === id
+          ? { ...e, walletId: fallback }
+          : e,
+      ),
     );
     setWallets((prev) => prev.filter((w) => w.id !== id));
   };
@@ -404,8 +443,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const recordPayment = (id: string, amount: number) => {
     setDebts((prev) =>
       prev.map((d) =>
-        d.id === id ? { ...d, paid: Math.min(d.amount, d.paid + amount) } : d
-      )
+        d.id === id ? { ...d, paid: Math.min(d.amount, d.paid + amount) } : d,
+      ),
     );
   };
 
@@ -433,7 +472,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     if (target.active) {
       setRecurring((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, active: false } : r))
+        prev.map((r) => (r.id === id ? { ...r, active: false } : r)),
       );
       return;
     }
@@ -443,7 +482,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const resumed: Recurring = {
       ...target,
       active: true,
-      nextDate: firstOccurrence(target.frequency, target.day, now).toISOString(),
+      nextDate: firstOccurrence(
+        target.frequency,
+        target.day,
+        now,
+      ).toISOString(),
     };
     const { created, updated } = runRecurring([resumed], now);
     setRecurring((prev) => prev.map((r) => (r.id === id ? updated[0] : r)));
@@ -452,6 +495,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteRecurring = (id: string) => {
     setRecurring((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // ---- Cloud restore: replace everything with a saved copy ----
+  const replaceAll = (s: Partial<Snapshot>) => {
+    if (Array.isArray(s.entries)) setEntries(s.entries);
+    if (Array.isArray(s.goals) && s.goals.length > 0) setGoals(s.goals);
+    if (Array.isArray(s.wallets) && s.wallets.length > 0) setWallets(s.wallets);
+    if (Array.isArray(s.debts)) setDebts(s.debts);
+    if (Array.isArray(s.recurring)) setRecurring(s.recurring);
+    if (typeof s.budget === "string") setBudget(s.budget);
   };
 
   const shiftMonth = (delta: number) => {
@@ -468,7 +521,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
 
   const monthEntries = entries.filter(
-    (e) => monthKeyOf(new Date(e.date)) === selectedMonth
+    (e) => monthKeyOf(new Date(e.date)) === selectedMonth,
   );
   const sum = (list: Entry[], kind: Kind) =>
     list.filter((e) => e.kind === kind).reduce((a, e) => a + e.amount, 0);
@@ -507,6 +560,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteRecurring,
         budget,
         setBudget,
+        replaceAll,
         saved,
         monthEntries,
         monthSaved,
