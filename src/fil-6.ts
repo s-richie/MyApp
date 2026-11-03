@@ -42,6 +42,33 @@ const fil: Record<string, string> = {
   "Your data stays on this phone.": "Nasa phone na ito ang data mo.",
   "Sign out": "Mag-sign out",
   "Sign out?": "Mag-sign out?",
+
+  // Forgot password
+  "Forgot password?": "Nakalimutan ang password?",
+  "Reset password": "I-reset ang password",
+  "Send code": "Magpadala ng code",
+  Code: "Code",
+  "New password": "Bagong password",
+  "Back to sign in": "Bumalik sa sign in",
+  "We'll email you a code.": "Magpapadala kami ng code sa email mo.",
+  "Check your email for the code.": "Tingnan ang email mo para sa code.",
+  "Send a new code": "Magpadala ng bagong code",
+  "Wrong or expired code.": "Mali o expired na ang code.",
+  "Could not set the new password. Request a new code.":
+    "Hindi na-set ang bagong password. Humingi ng bagong code.",
+  "Your entries are saved to the cloud.":
+    "Naka-save sa cloud ang mga entry mo.",
+
+  // Change password / delete account
+  "Change password": "Palitan ang password",
+  "Could not change the password": "Hindi napalitan ang password",
+  "Password changed": "Napalitan ang password",
+  "Delete account": "Burahin ang account",
+  "Delete account?": "Burahin ang account?",
+  "This deletes your account and cloud backup. Data on this phone stays.":
+    "Buburahin nito ang account at cloud backup mo. Mananatili ang data sa phone na ito.",
+  "Could not delete the account": "Hindi nabura ang account",
+  "Account deleted": "Nabura ang account",
 };
 
 export default fil;
