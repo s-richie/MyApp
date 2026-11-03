@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-    Image,
-    Pressable,
-    ScrollView,
-    StatusBar,
-    Text,
-    useWindowDimensions,
-    View,
+  Image,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  Text,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { useTheme } from "./app-theme";
 import { HeroBackdrop } from "./hero-decor";
@@ -15,28 +15,43 @@ import { useI18n } from "./i18n";
 import { Button, Field, T } from "./ui";
 
 type Result = { error?: string; needsConfirm?: boolean };
+type Mode = "in" | "up" | "reset";
 
 type Props = {
   onSignIn: (email: string, password: string) => Promise<Result>;
   onSignUp: (email: string, password: string) => Promise<Result>;
+  onSendCode: (email: string) => Promise<Result>;
+  onReset: (email: string, code: string, password: string) => Promise<Result>;
   onSkip: () => void;
   canCancel: boolean;
 };
 
-export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
+export function AuthScreen({
+  onSignIn,
+  onSignUp,
+  onSendCode,
+  onReset,
+  onSkip,
+  canCancel,
+}: Props) {
   const { colors } = useTheme();
   const { t } = useI18n();
   const { height } = useWindowDimensions();
 
-  const [mode, setMode] = useState<"in" | "up">("in");
+  const [mode, setMode] = useState<Mode>("in");
+  const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
   const friendly = (msg: string) => {
+    if (msg === "SET_PASSWORD_FAILED") {
+      return t("Could not set the new password. Request a new code.");
+    }
     const m = msg.toLowerCase();
     if (m.includes("invalid login")) return t("Wrong email or password.");
     if (m.includes("already") && m.includes("registered")) {
@@ -49,11 +64,49 @@ export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
     }
     if (m.includes("network") || m.includes("fetch"))
       return t("No internet. Try again.");
-    if (m.includes("rate limit") || m.includes("too many")) {
+    if (
+      m.includes("rate limit") ||
+      m.includes("too many") ||
+      m.includes("seconds")
+    ) {
       return t("Too many tries. Please wait a bit.");
+    }
+    if (m.includes("expired") || m.includes("token") || m.includes("otp")) {
+      return t("Wrong or expired code.");
     }
     return msg;
   };
+
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setStep("email");
+    setError("");
+    setInfo("");
+    setCode("");
+    setPassword("");
+  };
+
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    try {
+      await fn();
+    } catch (e) {
+      setError(friendly(String(e)));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendCode = (mail: string) =>
+    run(async () => {
+      const r = await onSendCode(mail);
+      if (r.error) {
+        setError(friendly(r.error));
+      } else {
+        setStep("code");
+        setInfo(t("Check your email for the code."));
+      }
+    });
 
   const submit = async () => {
     if (busy) return;
@@ -65,6 +118,28 @@ export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
       setError(t("Enter a valid email."));
       return;
     }
+
+    if (mode === "reset") {
+      if (step === "email") {
+        await sendCode(mail);
+        return;
+      }
+      const digits = code.replace(/\s/g, "");
+      if (digits.length < 6) {
+        setError(t("Wrong or expired code."));
+        return;
+      }
+      if (password.length < 8) {
+        setError(t("Password must be at least 8 characters."));
+        return;
+      }
+      await run(async () => {
+        const r = await onReset(mail, digits, password);
+        if (r.error) setError(friendly(r.error));
+      });
+      return;
+    }
+
     if (mode === "up" && password.length < 8) {
       setError(t("Password must be at least 8 characters."));
       return;
@@ -74,8 +149,7 @@ export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
       return;
     }
 
-    setBusy(true);
-    try {
+    await run(async () => {
       if (mode === "in") {
         const r = await onSignIn(mail, password);
         if (r.error) setError(friendly(r.error));
@@ -85,15 +159,51 @@ export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
         else if (r.needsConfirm)
           setInfo(t("Check your email to confirm your account."));
       }
-    } catch (e) {
-      setError(friendly(String(e)));
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
   const heroH = Math.max(190, Math.round(height * 0.27));
   const topPad = StatusBar.currentHeight ?? 24;
+
+  const mainLabel =
+    mode === "in"
+      ? t("Sign in")
+      : mode === "up"
+        ? t("Create account")
+        : step === "email"
+          ? t("Send code")
+          : t("Reset password");
+
+  const passwordField = (placeholder: string) => (
+    <View>
+      <Field
+        placeholder={placeholder}
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry={!showPw}
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={{ paddingRight: 46 }}
+      />
+      <Pressable
+        onPress={() => setShowPw(!showPw)}
+        hitSlop={10}
+        style={{
+          position: "absolute",
+          right: 14,
+          top: 0,
+          bottom: 0,
+          justifyContent: "center",
+        }}
+      >
+        <Ionicons
+          name={showPw ? "eye-off" : "eye"}
+          size={22}
+          color={colors.subtext}
+        />
+      </Pressable>
+    </View>
+  );
 
   return (
     <View
@@ -144,50 +254,70 @@ export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <T kind="muted" style={{ textAlign: "center", marginBottom: 16 }}>
-            {t("Back up your data across phones.")}
-          </T>
-
-          {/* Sign in / Create account */}
-          <View
-            style={{
-              flexDirection: "row",
-              backgroundColor: colors.card,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: colors.border,
-              padding: 4,
-              marginBottom: 12,
-            }}
-          >
-            {(["in", "up"] as const).map((m) => {
-              const active = mode === m;
-              return (
-                <Pressable
-                  key={m}
-                  onPress={() => {
-                    setMode(m);
-                    setError("");
-                    setInfo("");
-                  }}
+          {mode === "reset" ? (
+            <>
+              <T kind="title" style={{ textAlign: "center", fontSize: 18 }}>
+                {t("Reset password")}
+              </T>
+              {step === "email" ? (
+                <T
+                  kind="muted"
                   style={{
-                    flex: 1,
-                    padding: 10,
-                    borderRadius: 9,
-                    alignItems: "center",
-                    backgroundColor: active ? colors.green : "transparent",
+                    textAlign: "center",
+                    marginTop: 4,
+                    marginBottom: 12,
                   }}
                 >
-                  <T
-                    color={active ? "#fff" : colors.text}
-                    style={{ fontWeight: "700" }}
-                  >
-                    {m === "in" ? t("Sign in") : t("Create account")}
-                  </T>
-                </Pressable>
-              );
-            })}
-          </View>
+                  {t("We'll email you a code.")}
+                </T>
+              ) : (
+                <View style={{ height: 12 }} />
+              )}
+            </>
+          ) : (
+            <>
+              <T kind="muted" style={{ textAlign: "center", marginBottom: 16 }}>
+                {t("Back up your data across phones.")}
+              </T>
+
+              {/* Sign in / Create account */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: colors.card,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  padding: 4,
+                  marginBottom: 12,
+                }}
+              >
+                {(["in", "up"] as const).map((m) => {
+                  const active = mode === m;
+                  return (
+                    <Pressable
+                      key={m}
+                      onPress={() => switchMode(m)}
+                      style={{
+                        flex: 1,
+                        padding: 10,
+                        borderRadius: 9,
+                        alignItems: "center",
+                        backgroundColor: active ? colors.green : "transparent",
+                      }}
+                    >
+                      <T
+                        color={active ? "#fff" : colors.text}
+                        style={{ fontWeight: "700" }}
+                      >
+                        {m === "in" ? t("Sign in") : t("Create account")}
+                      </T>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
 
           <Field
             placeholder="Email"
@@ -196,36 +326,42 @@ export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!(mode === "reset" && step === "code")}
           />
 
-          <View>
-            <Field
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPw}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={{ paddingRight: 46 }}
-            />
+          {mode === "reset" ? (
+            step === "code" ? (
+              <>
+                <Field
+                  placeholder={t("Code")}
+                  value={code}
+                  onChangeText={setCode}
+                  keyboardType="number-pad"
+                  maxLength={10}
+                />
+                {passwordField(t("New password"))}
+              </>
+            ) : null
+          ) : (
+            passwordField("Password")
+          )}
+
+          {mode === "in" ? (
             <Pressable
-              onPress={() => setShowPw(!showPw)}
-              hitSlop={10}
-              style={{
-                position: "absolute",
-                right: 14,
-                top: 0,
-                bottom: 0,
-                justifyContent: "center",
-              }}
+              onPress={() => switchMode("reset")}
+              style={{ alignSelf: "flex-end", paddingVertical: 6 }}
             >
-              <Ionicons
-                name={showPw ? "eye-off" : "eye"}
-                size={22}
-                color={colors.subtext}
-              />
+              <T color={colors.blue} style={{ fontWeight: "600" }}>
+                {t("Forgot password?")}
+              </T>
             </Pressable>
-          </View>
+          ) : null}
+
+          {mode === "up" ? (
+            <T kind="muted" style={{ marginTop: 2 }}>
+              {t("Your entries are saved to the cloud.")}
+            </T>
+          ) : null}
 
           {error ? (
             <T color={colors.red} style={{ marginTop: 4 }}>
@@ -240,26 +376,42 @@ export function AuthScreen({ onSignIn, onSignUp, onSkip, canCancel }: Props) {
 
           <View style={{ marginTop: 8 }}>
             <Button
-              label={
-                busy
-                  ? "..."
-                  : mode === "in"
-                    ? t("Sign in")
-                    : t("Create account")
-              }
+              label={busy ? "..." : mainLabel}
               icon={busy ? undefined : "arrow-forward"}
               onPress={submit}
             />
           </View>
 
-          <Pressable
-            onPress={onSkip}
-            style={{ padding: 14, alignItems: "center" }}
-          >
-            <T color={colors.subtext} style={{ fontWeight: "600" }}>
-              {canCancel ? t("Cancel") : t("Continue without account")}
-            </T>
-          </Pressable>
+          {mode === "reset" && step === "code" ? (
+            <Pressable
+              onPress={() => sendCode(email.trim().toLowerCase())}
+              style={{ padding: 10, alignItems: "center" }}
+            >
+              <T color={colors.blue} style={{ fontWeight: "600" }}>
+                {t("Send a new code")}
+              </T>
+            </Pressable>
+          ) : null}
+
+          {mode === "reset" ? (
+            <Pressable
+              onPress={() => switchMode("in")}
+              style={{ padding: 10, alignItems: "center" }}
+            >
+              <T color={colors.subtext} style={{ fontWeight: "600" }}>
+                {t("Back to sign in")}
+              </T>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={onSkip}
+              style={{ padding: 14, alignItems: "center" }}
+            >
+              <T color={colors.subtext} style={{ fontWeight: "600" }}>
+                {canCancel ? t("Cancel") : t("Continue without account")}
+              </T>
+            </Pressable>
+          )}
         </ScrollView>
       </View>
     </View>
