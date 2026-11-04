@@ -3,8 +3,8 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider as NavThemeProvider,
-  Tabs,
-} from "expo-router";
+} from "@react-navigation/native";
+import { Tabs } from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { DataProvider } from "../app-data";
@@ -85,12 +85,8 @@ function TabsLayout() {
           options={{
             title: "Home",
             headerTitle: () => <HeaderTitle title="Ipon Bot" />,
-            tabBarIcon: ({ focused, size }) => (
-              <Ionicons
-                name="home"
-                size={size}
-                color={focused ? colors.green : colors.subtext}
-              />
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="home" size={size} color={color} />
             ),
           }}
         />
@@ -99,12 +95,8 @@ function TabsLayout() {
           options={{
             title: "Ipon",
             headerTitle: () => <HeaderTitle title="Ipon" />,
-            tabBarIcon: ({ focused, size }) => (
-              <Ionicons
-                name="wallet"
-                size={size}
-                color={focused ? colors.green : colors.subtext}
-              />
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="wallet" size={size} color={color} />
             ),
           }}
         />
@@ -113,12 +105,8 @@ function TabsLayout() {
           options={{
             title: "Budget",
             headerTitle: () => <HeaderTitle title="Budget" />,
-            tabBarIcon: ({ focused, size }) => (
-              <Ionicons
-                name="receipt"
-                size={size}
-                color={focused ? colors.green : colors.subtext}
-              />
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="receipt" size={size} color={color} />
             ),
           }}
         />
@@ -127,12 +115,8 @@ function TabsLayout() {
           options={{
             title: t("History"),
             headerTitle: () => <HeaderTitle title={t("History")} />,
-            tabBarIcon: ({ focused, size }) => (
-              <Ionicons
-                name="time"
-                size={size}
-                color={focused ? colors.green : colors.subtext}
-              />
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="time" size={size} color={color} />
             ),
           }}
         />
@@ -141,11 +125,11 @@ function TabsLayout() {
           options={{
             title: t("More"),
             headerTitle: () => <HeaderTitle title={t("More")} />,
-            tabBarIcon: ({ focused, size }) => (
+            tabBarIcon: ({ color, size }) => (
               <Ionicons
                 name="ellipsis-horizontal-circle"
                 size={size}
-                color={focused ? colors.green : colors.subtext}
+                color={color}
               />
             ),
           }}
