@@ -27,6 +27,11 @@ const fil: Record<string, string> = {
   "Use cloud data": "Gamitin ang cloud",
   "Use this phone": "Gamitin ang phone na ito",
   "Not now": "Mamaya na",
+
+  // Reminder
+  "Daily reminder": "Paalala araw-araw",
+  "Did you save today? Log your ipon and gastos.":
+    "Naka-ipon ka na ba today? I-log ang ipon at gastos mo.",
 };
 
 export default fil;
