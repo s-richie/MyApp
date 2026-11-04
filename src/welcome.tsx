@@ -1,31 +1,48 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Image,
-  Text,
   Animated,
   Easing,
+  Image,
   ScrollView,
-  StatusBar,
+  Text,
   useWindowDimensions,
+  View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "./app-theme";
-import { useI18n } from "./i18n";
-import { T, Chip, Button, IconCircle, IconName } from "./ui";
 import { HeroBackdrop } from "./hero-decor";
+import { useI18n } from "./i18n";
+import { Button, Chip, IconCircle, IconName, T } from "./ui";
 
 const KEY = "iponbot:welcome:v1";
 
-const FEATURES: { icon: IconName; tone: string; title: string; sub: string }[] = [
-  { icon: "wallet", tone: "#16a34a", title: "Save money", sub: "Add ipon to your goals" },
-  { icon: "receipt", tone: "#2563eb", title: "Track spending", sub: "Log your gastos" },
-  { icon: "trophy", tone: "#f59e0b", title: "Reach goals", sub: "See your progress" },
-];
+const FEATURES: { icon: IconName; tone: string; title: string; sub: string }[] =
+  [
+    {
+      icon: "wallet",
+      tone: "#16a34a",
+      title: "Save money",
+      sub: "Add ipon to your goals",
+    },
+    {
+      icon: "receipt",
+      tone: "#2563eb",
+      title: "Track spending",
+      sub: "Log your gastos",
+    },
+    {
+      icon: "trophy",
+      tone: "#f59e0b",
+      title: "Reach goals",
+      sub: "See your progress",
+    },
+  ];
 
 export function Welcome() {
   const { colors } = useTheme();
   const { t, lang, setLang } = useI18n();
+  const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [show, setShow] = useState<boolean | null>(null);
 
@@ -54,7 +71,7 @@ export function Welcome() {
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     loop.start();
     Animated.timing(enter, {
@@ -88,8 +105,10 @@ export function Welcome() {
     AsyncStorage.setItem(KEY, "1").catch(() => {});
   };
 
-  const heroH = Math.max(260, Math.round(height * 0.38));
-  const topPad = StatusBar.currentHeight ?? 24;
+  // the hero and the robot scale with the screen height
+  const heroH =
+    Math.max(200, Math.min(Math.round(height * 0.36), 340)) + insets.top;
+  const robot = Math.min(130, Math.round((heroH - insets.top) * 0.45));
 
   return (
     <View style={overlay}>
@@ -97,7 +116,7 @@ export function Welcome() {
       <View
         style={{
           height: heroH,
-          paddingTop: topPad,
+          paddingTop: insets.top,
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
@@ -118,14 +137,31 @@ export function Welcome() {
         >
           <Image
             source={require("../assets/images/splash-icon.png")}
-            style={{ width: 130, height: 130 }}
+            style={{ width: robot, height: robot }}
             resizeMode="contain"
           />
         </Animated.View>
-        <Text style={{ color: "#fff", fontSize: 32, fontWeight: "800", marginTop: 2 }}>
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{
+            color: "#fff",
+            fontSize: 32,
+            fontWeight: "800",
+            marginTop: 2,
+          }}
+        >
           Ipon Bot
         </Text>
-        <Text style={{ color: "#dcfce7", fontSize: 15, marginTop: 2 }}>
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{
+            color: "#dcfce7",
+            fontSize: 15,
+            marginTop: 2,
+            textAlign: "center",
+            paddingHorizontal: 24,
+          }}
+        >
           {t("Save smart. Spend wise.")}
         </Text>
       </View>
@@ -141,63 +177,82 @@ export function Welcome() {
         }}
       >
         <ScrollView
-          contentContainerStyle={{ padding: 24, paddingTop: 26 }}
+          contentContainerStyle={{
+            padding: 24,
+            paddingTop: 26,
+            paddingBottom: 24 + insets.bottom,
+            alignItems: "center",
+          }}
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "center",
-              gap: 8,
-              marginBottom: 18,
-            }}
-          >
-            <Chip label="English" active={lang === "en"} onPress={() => setLang("en")} />
-            <Chip label="Filipino" active={lang === "fil"} onPress={() => setLang("fil")} />
-          </View>
+          <View style={{ width: "100%", maxWidth: 520 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 8,
+                marginBottom: 18,
+              }}
+            >
+              <Chip
+                label="English"
+                active={lang === "en"}
+                onPress={() => setLang("en")}
+              />
+              <Chip
+                label="Filipino"
+                active={lang === "fil"}
+                onPress={() => setLang("fil")}
+              />
+            </View>
 
-          {FEATURES.map((f, i) => {
-            const range = [i * 0.18, i * 0.18 + 0.5];
-            return (
-              <Animated.View
-                key={f.icon}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 14,
-                  backgroundColor: colors.card,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 18,
-                  padding: 14,
-                  marginBottom: 12,
-                  opacity: enter.interpolate({
-                    inputRange: range,
-                    outputRange: [0, 1],
-                    extrapolate: "clamp",
-                  }),
-                  transform: [
-                    {
-                      translateY: enter.interpolate({
-                        inputRange: range,
-                        outputRange: [24, 0],
-                        extrapolate: "clamp",
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <IconCircle name={f.icon} color={f.tone} size={50} />
-                <View style={{ flex: 1 }}>
-                  <T kind="title">{t(f.title)}</T>
-                  <T kind="muted">{t(f.sub)}</T>
-                </View>
-              </Animated.View>
-            );
-          })}
+            {FEATURES.map((f, i) => {
+              const range = [i * 0.18, i * 0.18 + 0.5];
+              return (
+                <Animated.View
+                  key={f.icon}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 14,
+                    backgroundColor: colors.card,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 18,
+                    padding: 14,
+                    marginBottom: 12,
+                    opacity: enter.interpolate({
+                      inputRange: range,
+                      outputRange: [0, 1],
+                      extrapolate: "clamp",
+                    }),
+                    transform: [
+                      {
+                        translateY: enter.interpolate({
+                          inputRange: range,
+                          outputRange: [24, 0],
+                          extrapolate: "clamp",
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <IconCircle name={f.icon} color={f.tone} size={50} />
+                  <View style={{ flex: 1 }}>
+                    <T kind="title">{t(f.title)}</T>
+                    <T kind="muted">{t(f.sub)}</T>
+                  </View>
+                </Animated.View>
+              );
+            })}
 
-          <View style={{ marginTop: 10 }}>
-            <Button label={t("Get started")} icon="arrow-forward" onPress={done} />
+            <View style={{ marginTop: 10 }}>
+              <Button
+                label={t("Get started")}
+                icon="arrow-forward"
+                onPress={done}
+              />
+            </View>
           </View>
         </ScrollView>
       </View>

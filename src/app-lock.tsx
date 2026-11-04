@@ -1,18 +1,27 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as LocalAuthentication from "expo-local-authentication";
+import * as SecureStore from "expo-secure-store";
 import {
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useRef,
   useState,
-  ReactNode,
 } from "react";
-import { AppState, View, Text, Image, Pressable, StyleSheet } from "react-native";
-import * as SecureStore from "expo-secure-store";
-import * as LocalAuthentication from "expo-local-authentication";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  AppState,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
-import { PinDots, PinPad, PIN_LENGTH } from "./pin-pad";
+import { PIN_LENGTH, PinDots, PinPad } from "./pin-pad";
 
 const PIN_KEY = "iponbot_pin";
 const BIO_KEY = "iponbot_bio";
@@ -109,7 +118,8 @@ export function LockProvider({ children }: { children: ReactNode }) {
   };
 
   const tryBiometric = async () => {
-    if (!biometricEnabled || !biometricAvailable || authenticating.current) return;
+    if (!biometricEnabled || !biometricAvailable || authenticating.current)
+      return;
     authenticating.current = true;
     try {
       const res = await LocalAuthentication.authenticateAsync({
@@ -168,6 +178,8 @@ function LockScreen({
 }) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const [entered, setEntered] = useState("");
   const [error, setError] = useState(false);
   const [attempts, setAttempts] = useState(0);
@@ -224,52 +236,78 @@ function LockScreen({
     setEntered((e) => e.slice(0, -1));
   };
 
+  const robot = height < 620 ? 70 : height < 740 ? 90 : 110;
+
   return (
-    <View style={[s.overlay, { backgroundColor: colors.background }]}>
-      <Image
-        source={require("../assets/images/splash-icon.png")}
-        style={s.robot}
-        resizeMode="contain"
-      />
-      <Text style={[s.title, { color: colors.text }]}>Ipon Bot</Text>
-      <Text style={{ color: error || waiting ? colors.red : colors.subtext }}>
-        {waiting
-          ? t("Too many tries. Wait {s}s", { s: secondsLeft })
-          : error
-          ? t("Wrong PIN. Try again.")
-          : t("Enter your PIN")}
-      </Text>
+    <View
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 999,
+        elevation: 999,
+        backgroundColor: colors.background,
+      }}
+    >
+      <ScrollView
+        bounces={false}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingTop: insets.top + 12,
+          paddingBottom: insets.bottom + 12,
+        }}
+      >
+        <Image
+          source={require("../assets/images/splash-icon.png")}
+          style={{ width: robot, height: robot }}
+          resizeMode="contain"
+        />
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{
+            color: colors.text,
+            fontSize: 24,
+            fontWeight: "bold",
+            marginBottom: 4,
+          }}
+        >
+          Ipon Bot
+        </Text>
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{
+            color: error || waiting ? colors.red : colors.subtext,
+            textAlign: "center",
+            paddingHorizontal: 24,
+          }}
+        >
+          {waiting
+            ? t("Too many tries. Wait {s}s", { s: secondsLeft })
+            : error
+              ? t("Wrong PIN. Try again.")
+              : t("Enter your PIN")}
+        </Text>
 
-      <PinDots count={entered.length} error={error} />
+        <PinDots count={entered.length} error={error} />
 
-      <PinPad
-        onDigit={onDigit}
-        onDelete={onDelete}
-        disabled={waiting}
-        bottomLeft={
-          showBiometric ? (
-            <Pressable onPress={onBiometric} hitSlop={10}>
-              <Ionicons name="finger-print" size={32} color={colors.green} />
-            </Pressable>
-          ) : undefined
-        }
-      />
+        <PinPad
+          onDigit={onDigit}
+          onDelete={onDelete}
+          disabled={waiting}
+          bottomLeft={
+            showBiometric ? (
+              <Pressable onPress={onBiometric} hitSlop={10}>
+                <Ionicons name="finger-print" size={32} color={colors.green} />
+              </Pressable>
+            ) : undefined
+          }
+        />
+      </ScrollView>
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
-    elevation: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  robot: { width: 110, height: 110 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 4 },
-});

@@ -1,10 +1,23 @@
 import { useEffect, useRef } from "react";
-import { View, Image, Text, Animated, Easing } from "react-native";
-import { useI18n } from "./i18n";
+import {
+  Animated,
+  Easing,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeroBackdrop } from "./hero-decor";
+import { useI18n } from "./i18n";
 
 export function Splash({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+
+  // the robot scales with the screen
+  const logo = Math.round(Math.min(170, width * 0.45, height * 0.25));
+  const ring = Math.round(logo * 1.35);
 
   const logoScale = useRef(new Animated.Value(0.3)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -20,7 +33,11 @@ export function Splash({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     // robot pops in, then wiggles
     Animated.parallel([
-      Animated.timing(logoOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
       Animated.spring(logoScale, {
         toValue: 1,
         friction: 4,
@@ -39,7 +56,11 @@ export function Splash({ onDone }: { onDone: () => void }) {
     Animated.sequence([
       Animated.delay(450),
       Animated.parallel([
-        Animated.timing(titleOpacity, { toValue: 1, duration: 450, useNativeDriver: true }),
+        Animated.timing(titleOpacity, {
+          toValue: 1,
+          duration: 450,
+          useNativeDriver: true,
+        }),
         Animated.timing(titleY, {
           toValue: 0,
           duration: 450,
@@ -50,7 +71,11 @@ export function Splash({ onDone }: { onDone: () => void }) {
     ]).start();
     Animated.sequence([
       Animated.delay(900),
-      Animated.timing(tagOpacity, { toValue: 1, duration: 450, useNativeDriver: true }),
+      Animated.timing(tagOpacity, {
+        toValue: 1,
+        duration: 450,
+        useNativeDriver: true,
+      }),
     ]).start();
 
     // glow ring and loading dots keep going
@@ -68,7 +93,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulseLoop.start();
 
@@ -77,11 +102,19 @@ export function Splash({ onDone }: { onDone: () => void }) {
         180,
         [d1, d2, d3].map((d) =>
           Animated.sequence([
-            Animated.timing(d, { toValue: 1, duration: 300, useNativeDriver: true }),
-            Animated.timing(d, { toValue: 0.3, duration: 300, useNativeDriver: true }),
-          ])
-        )
-      )
+            Animated.timing(d, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.timing(d, {
+              toValue: 0.3,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+          ]),
+        ),
+      ),
     );
     dotsLoop.start();
 
@@ -101,8 +134,8 @@ export function Splash({ onDone }: { onDone: () => void }) {
         {/* robot with glow */}
         <View
           style={{
-            width: 240,
-            height: 240,
+            width: ring + 10,
+            height: ring + 10,
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -110,9 +143,9 @@ export function Splash({ onDone }: { onDone: () => void }) {
           <Animated.View
             style={{
               position: "absolute",
-              width: 230,
-              height: 230,
-              borderRadius: 115,
+              width: ring,
+              height: ring,
+              borderRadius: ring / 2,
               backgroundColor: "#ffffff",
               opacity: pulse.interpolate({
                 inputRange: [0, 1],
@@ -132,8 +165,8 @@ export function Splash({ onDone }: { onDone: () => void }) {
             source={require("../assets/images/splash-icon.png")}
             resizeMode="contain"
             style={{
-              width: 170,
-              height: 170,
+              width: logo,
+              height: logo,
               opacity: logoOpacity,
               transform: [
                 { scale: logoScale },
@@ -152,6 +185,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
           style={{ opacity: titleOpacity, transform: [{ translateY: titleY }] }}
         >
           <Text
+            maxFontSizeMultiplier={1.1}
             style={{
               color: "#fff",
               fontSize: 40,
@@ -164,11 +198,14 @@ export function Splash({ onDone }: { onDone: () => void }) {
         </Animated.View>
 
         <Animated.Text
+          maxFontSizeMultiplier={1.1}
           style={{
             opacity: tagOpacity,
             color: "#dcfce7",
             fontSize: 16,
             marginTop: 6,
+            textAlign: "center",
+            paddingHorizontal: 24,
           }}
         >
           {t("Save smart. Spend wise.")}
@@ -179,7 +216,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
       <View
         style={{
           position: "absolute",
-          bottom: 56,
+          bottom: insets.bottom + 40,
           left: 0,
           right: 0,
           flexDirection: "row",

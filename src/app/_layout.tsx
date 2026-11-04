@@ -1,5 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavThemeProvider,
+  Tabs,
+} from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { DataProvider } from "../app-data";
@@ -21,91 +26,139 @@ function HeaderTitle({ title }: { title: string }) {
         style={s.headerLogo}
         resizeMode="contain"
       />
-      <Text style={[s.headerText, { color: colors.text }]}>{title}</Text>
+      <Text
+        maxFontSizeMultiplier={1.2}
+        numberOfLines={1}
+        style={[s.headerText, { color: colors.text }]}
+      >
+        {title}
+      </Text>
     </View>
   );
 }
 
 function TabsLayout() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t } = useI18n();
 
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.green,
-        tabBarInactiveTintColor: colors.subtext,
-        tabBarLabelStyle: { fontSize: 11 },
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.border,
-        },
-        headerStyle: { backgroundColor: colors.card },
-        headerTintColor: colors.text,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          headerTitle: () => <HeaderTitle title="Ipon Bot" />,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="ipon"
-        options={{
-          title: "Ipon",
-          headerTitle: () => <HeaderTitle title="Ipon" />,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="wallet" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="budget"
-        options={{
-          title: "Budget",
-          headerTitle: () => <HeaderTitle title="Budget" />,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: t("History"),
-          headerTitle: () => <HeaderTitle title={t("History")} />,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: t("More"),
-          headerTitle: () => <HeaderTitle title={t("More")} />,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name="ellipsis-horizontal-circle"
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-      />
+  // Make the navigation colors match the app theme (no white flashes in dark mode)
+  const baseTheme = isDark ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      primary: colors.green,
+      background: colors.background,
+      card: colors.card,
+      text: colors.text,
+      border: colors.border,
+    },
+  };
 
-      {/* These open from inside the More tab, so they stay out of the tab bar */}
-      <Tabs.Screen name="utang" options={{ href: null }} />
-      <Tabs.Screen name="bot" options={{ href: null }} />
-      <Tabs.Screen name="recurring" options={{ href: null }} />
-      <Tabs.Screen name="export" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
-    </Tabs>
+  return (
+    <NavThemeProvider value={navTheme}>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: colors.green,
+          tabBarInactiveTintColor: colors.subtext,
+          tabBarLabelStyle: { fontSize: 11 },
+          tabBarAllowFontScaling: false,
+          tabBarHideOnKeyboard: true,
+          tabBarStyle: {
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+          },
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+          headerTitleAllowFontScaling: false,
+          // On tablets and wide screens the content stays centered and not stretched
+          sceneStyle: {
+            backgroundColor: colors.background,
+            width: "100%",
+            maxWidth: 640,
+            alignSelf: "center",
+          },
+        }}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            headerTitle: () => <HeaderTitle title="Ipon Bot" />,
+            tabBarIcon: ({ focused, size }) => (
+              <Ionicons
+                name="home"
+                size={size}
+                color={focused ? colors.green : colors.subtext}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="ipon"
+          options={{
+            title: "Ipon",
+            headerTitle: () => <HeaderTitle title="Ipon" />,
+            tabBarIcon: ({ focused, size }) => (
+              <Ionicons
+                name="wallet"
+                size={size}
+                color={focused ? colors.green : colors.subtext}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="budget"
+          options={{
+            title: "Budget",
+            headerTitle: () => <HeaderTitle title="Budget" />,
+            tabBarIcon: ({ focused, size }) => (
+              <Ionicons
+                name="receipt"
+                size={size}
+                color={focused ? colors.green : colors.subtext}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="history"
+          options={{
+            title: t("History"),
+            headerTitle: () => <HeaderTitle title={t("History")} />,
+            tabBarIcon: ({ focused, size }) => (
+              <Ionicons
+                name="time"
+                size={size}
+                color={focused ? colors.green : colors.subtext}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: t("More"),
+            headerTitle: () => <HeaderTitle title={t("More")} />,
+            tabBarIcon: ({ focused, size }) => (
+              <Ionicons
+                name="ellipsis-horizontal-circle"
+                size={size}
+                color={focused ? colors.green : colors.subtext}
+              />
+            ),
+          }}
+        />
+
+        {/* These open from inside the More tab, so they stay out of the tab bar */}
+        <Tabs.Screen name="utang" options={{ href: null }} />
+        <Tabs.Screen name="bot" options={{ href: null }} />
+        <Tabs.Screen name="recurring" options={{ href: null }} />
+        <Tabs.Screen name="export" options={{ href: null }} />
+        <Tabs.Screen name="settings" options={{ href: null }} />
+      </Tabs>
+    </NavThemeProvider>
   );
 }
 

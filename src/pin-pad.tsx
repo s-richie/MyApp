@@ -1,26 +1,43 @@
-import { ReactNode } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { ReactNode } from "react";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useTheme } from "./app-theme";
 
 export const PIN_LENGTH = 4;
 
+// Keys get smaller on short screens so the whole pad always fits
+function useKeySize() {
+  const { height } = useWindowDimensions();
+  if (height < 620) return { size: 54, gap: 10 };
+  if (height < 740) return { size: 62, gap: 12 };
+  return { size: 72, gap: 16 };
+}
+
 export function PinDots({ count, error }: { count: number; error?: boolean }) {
   const { colors } = useTheme();
   const tone = error ? colors.red : colors.green;
+  const { height } = useWindowDimensions();
 
   return (
-    <View style={s.dots}>
+    <View
+      style={{
+        flexDirection: "row",
+        gap: 16,
+        justifyContent: "center",
+        marginVertical: height < 620 ? 12 : 20,
+      }}
+    >
       {Array.from({ length: PIN_LENGTH }, (_, i) => (
         <View
           key={i}
-          style={[
-            s.dot,
-            {
-              borderColor: tone,
-              backgroundColor: i < count ? tone : "transparent",
-            },
-          ]}
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: 9,
+            borderWidth: 2,
+            borderColor: tone,
+            backgroundColor: i < count ? tone : "transparent",
+          }}
         />
       ))}
     </View>
@@ -36,6 +53,7 @@ type PadProps = {
 
 export function PinPad({ onDigit, onDelete, disabled, bottomLeft }: PadProps) {
   const { colors } = useTheme();
+  const { size, gap } = useKeySize();
   const rows = [
     ["1", "2", "3"],
     ["4", "5", "6"],
@@ -47,49 +65,58 @@ export function PinPad({ onDigit, onDelete, disabled, bottomLeft }: PadProps) {
       key={label}
       disabled={disabled}
       onPress={() => onDigit(label)}
-      style={({ pressed }) => [
-        s.key,
-        {
-          backgroundColor: pressed ? colors.barBg : colors.card,
-          borderColor: colors.border,
-          opacity: disabled ? 0.4 : 1,
-        },
-      ]}
+      style={({ pressed }) => ({
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: pressed ? colors.barBg : colors.card,
+        borderColor: colors.border,
+        opacity: disabled ? 0.4 : 1,
+      })}
     >
-      <Text style={[s.keyText, { color: colors.text }]}>{label}</Text>
+      <Text
+        allowFontScaling={false}
+        style={{
+          fontSize: Math.round(size * 0.39),
+          fontWeight: "600",
+          color: colors.text,
+        }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
+
+  const slot = {
+    width: size,
+    height: size,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+  const row = {
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
+    gap: gap + 4,
+    marginBottom: gap,
+  };
 
   return (
     <View>
       {rows.map((r, i) => (
-        <View key={i} style={s.row}>
+        <View key={i} style={row}>
           {r.map(key)}
         </View>
       ))}
-      <View style={s.row}>
-        <View style={s.slot}>{bottomLeft}</View>
+      <View style={row}>
+        <View style={slot}>{bottomLeft}</View>
         {key("0")}
-        <Pressable style={s.slot} onPress={onDelete} disabled={disabled}>
+        <Pressable style={slot} onPress={onDelete} disabled={disabled}>
           <Ionicons name="backspace-outline" size={28} color={colors.text} />
         </Pressable>
       </View>
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  dots: { flexDirection: "row", gap: 16, justifyContent: "center", marginVertical: 20 },
-  dot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2 },
-  row: { flexDirection: "row", justifyContent: "center", gap: 20, marginBottom: 16 },
-  key: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  keyText: { fontSize: 28, fontWeight: "600" },
-  slot: { width: 72, height: 72, alignItems: "center", justifyContent: "center" },
-});
