@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Switch, Pressable, Alert, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Platform, Pressable, Switch, View } from "react-native";
 import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
-import { Screen, Card, T, IconCircle, Chip, Button, IconName } from "./ui";
+import { Card, Chip, IconCircle, Screen, T } from "./ui";
 
 // Show notifications (with sound and vibration) even while the app is open
 Notifications.setNotificationHandler({
@@ -17,33 +17,14 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const STORAGE_KEY = "iponbot:reminders:v1";
-// New channel id: Android cannot change a channel after it is created,
-// so this makes sure the vibration settings apply on updated installs too.
+const STORAGE_KEY = "iponbot:reminder:v2";
+const OLD_KEY = "iponbot:reminders:v1"; // the old two-reminder settings
+// Android cannot change a channel after it is created, so we keep this id
 const CHANNEL_ID = "reminders-v2";
 const VIBRATION = [0, 400, 200, 400];
 
-type Key = "ipon" | "gastos";
-type Rem = { on: boolean; hour: number; minute: number; id?: string };
-type Settings = Record<Key, Rem>;
-
-const DEFAULTS: Settings = {
-  ipon: { on: false, hour: 19, minute: 0 },
-  gastos: { on: false, hour: 21, minute: 0 },
-};
-
-const INFO: Record<Key, { title: string; icon: IconName; body: string }> = {
-  ipon: {
-    title: "Ipon reminder",
-    icon: "wallet",
-    body: "Naka-ipon ka na ba today? Kahit ₱10, counted!",
-  },
-  gastos: {
-    title: "Gastos reminder",
-    icon: "receipt",
-    body: "Nailista mo na ba ang gastos mo today?",
-  },
-};
+type Reminder = { on: boolean; hour: number; minute: number; id?: string };
+const DEFAULT: Reminder = { on: false, hour: 19, minute: 0 };
 
 const fmt = (h: number, m: number) =>
   `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
@@ -107,11 +88,25 @@ function Stepper({
   return (
     <View style={{ alignItems: "center" }}>
       <T kind="muted">{label}</T>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          marginTop: 6,
+        }}
+      >
         <Pressable style={btn} onPress={onMinus}>
           <Ionicons name="remove" size={18} color={colors.text} />
         </Pressable>
-        <T style={{ minWidth: 26, textAlign: "center", fontSize: 18, fontWeight: "700" }}>
+        <T
+          style={{
+            minWidth: 26,
+            textAlign: "center",
+            fontSize: 18,
+            fontWeight: "700",
+          }}
+        >
           {value}
         </T>
         <Pressable style={btn} onPress={onPlus}>
@@ -126,35 +121,31 @@ export default function RemindersScreen() {
   const { colors } = useTheme();
   const { t } = useI18n();
 
-  const [settings, setSettings] = useState<Settings>(DEFAULTS);
-  const settingsRef = useRef<Settings>(DEFAULTS);
+  const [rem, setRem] = useState<Reminder>(DEFAULT);
+  const remRef = useRef<Reminder>(DEFAULT);
   const busy = useRef(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const d = JSON.parse(raw);
-          const merged: Settings = {
-            ipon: { ...DEFAULTS.ipon, ...(d.ipon ?? {}) },
-            gastos: { ...DEFAULTS.gastos, ...(d.gastos ?? {}) },
-          };
-          settingsRef.current = merged;
-          setSettings(merged);
-        }
-      } catch (e) {
-        console.warn("Could not load reminders", e);
-      }
-    })();
-  }, []);
+  const schedule = (hour: number, minute: number) =>
+    Notifications.scheduleNotificationAsync({
+      content: {
+        title: "MoneyMate",
+        body: t("Did you save today? Log your ipon and gastos."),
+        vibrate: VIBRATION,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+        ...channelPart(),
+      },
+    });
 
-  const update = async (key: Key, patch: Partial<Rem>) => {
+  const apply = async (patch: Partial<Reminder>) => {
     if (busy.current) return; // ignore taps while scheduling
     busy.current = true;
     try {
-      const cur = settingsRef.current[key];
-      const next: Rem = { ...cur, ...patch };
+      const cur = remRef.current;
+      const next: Reminder = { ...cur, ...patch };
 
       // remove the old schedule first
       if (cur.id) {
@@ -170,29 +161,18 @@ export default function RemindersScreen() {
           next.on = false;
           Alert.alert(
             t("Notifications are off"),
-            t("Allow notifications for Expo Go in your phone's settings, then try again.")
+            t(
+              "Allow notifications for Expo Go in your phone's settings, then try again.",
+            ),
           );
         } else {
-          next.id = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: "Ipon Bot",
-              body: INFO[key].body,
-              vibrate: VIBRATION,
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DAILY,
-              hour: next.hour,
-              minute: next.minute,
-              ...channelPart(),
-            },
-          });
+          next.id = await schedule(next.hour, next.minute);
         }
       }
 
-      const all: Settings = { ...settingsRef.current, [key]: next };
-      settingsRef.current = all;
-      setSettings(all);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+      remRef.current = next;
+      setRem(next);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch (e) {
       console.warn("Reminder error", e);
       Alert.alert(t("Could not set the reminder"), String(e));
@@ -201,66 +181,74 @@ export default function RemindersScreen() {
     }
   };
 
-  const stepHour = (key: Key, delta: number) =>
-    update(key, { hour: (settingsRef.current[key].hour + delta + 24) % 24 });
+  // load the saved reminder, and merge the old two reminders into one
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const d = JSON.parse(raw);
+          const loaded: Reminder = { ...DEFAULT, ...d };
+          remRef.current = loaded;
+          setRem(loaded);
+          return;
+        }
 
-  const stepMinute = (key: Key, delta: number) =>
-    update(key, { minute: (settingsRef.current[key].minute + delta + 60) % 60 });
+        const old = await AsyncStorage.getItem(OLD_KEY);
+        if (old) {
+          const d = JSON.parse(old);
+          const wasOn = !!(d?.ipon?.on || d?.gastos?.on);
 
-  const sendTest = async () => {
-    try {
-      const ok = await ensurePermission();
-      if (!ok) {
-        Alert.alert(
-          t("Notifications are off"),
-          t("Allow notifications for Expo Go in your phone's settings, then try again.")
-        );
-        return;
+          // cancel the old separate reminders
+          await Notifications.cancelAllScheduledNotificationsAsync().catch(
+            () => {},
+          );
+          await AsyncStorage.removeItem(OLD_KEY).catch(() => {});
+
+          const base: Reminder = {
+            on: false,
+            hour: d?.ipon?.hour ?? DEFAULT.hour,
+            minute: d?.ipon?.minute ?? DEFAULT.minute,
+          };
+          remRef.current = base;
+          setRem(base);
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(base));
+          if (wasOn) await apply({ on: true });
+        }
+      } catch (e) {
+        console.warn("Could not load the reminder", e);
       }
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Ipon Bot",
-          body: "It works! Reminders are ready.",
-          vibrate: VIBRATION,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 5,
-          ...channelPart(),
-        },
-      });
-      Alert.alert(t("Test sent"), t("Notification in 5 seconds."));
-    } catch (e) {
-      console.warn("Test notification error", e);
-      Alert.alert(t("Could not send the test"), String(e));
-    }
-  };
+    })();
+  }, []);
+
+  const stepHour = (delta: number) =>
+    apply({ hour: (remRef.current.hour + delta + 24) % 24 });
+
+  const stepMinute = (delta: number) =>
+    apply({ minute: (remRef.current.minute + delta + 60) % 60 });
 
   return (
     <Screen>
-      {(["ipon", "gastos"] as Key[]).map((key) => {
-        const r = settings[key];
-        const info = INFO[key];
-        const tone = key === "ipon" ? colors.green : colors.red;
-        return (
-          <Card key={key}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <IconCircle name={info.icon} color={tone} size={42} />
-              <View style={{ flex: 1 }}>
-                <T kind="title">{t(info.title)}</T>
-                <T kind="muted">
-                  {r.on
-                    ? t("Every day at {time}", { time: fmt(r.hour, r.minute) })
-                    : t("Off")}
-                </T>
-              </View>
-              <Switch
-                value={r.on}
-                onValueChange={(v) => update(key, { on: v })}
-                trackColor={{ false: "#d1d5db", true: colors.green }}
-              />
-            </View>
+      <Card>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <IconCircle name="notifications" size={46} />
+          <View style={{ flex: 1 }}>
+            <T kind="title">{t("Daily reminder")}</T>
+            <T kind="muted">
+              {rem.on
+                ? t("Every day at {time}", { time: fmt(rem.hour, rem.minute) })
+                : t("Off")}
+            </T>
+          </View>
+          <Switch
+            value={rem.on}
+            onValueChange={(v) => apply({ on: v })}
+            trackColor={{ false: "#d1d5db", true: colors.green }}
+          />
+        </View>
 
+        {rem.on ? (
+          <>
             <T
               style={{
                 fontSize: 34,
@@ -269,7 +257,7 @@ export default function RemindersScreen() {
                 marginVertical: 12,
               }}
             >
-              {fmt(r.hour, r.minute)}
+              {fmt(rem.hour, rem.minute)}
             </T>
 
             <View
@@ -281,34 +269,24 @@ export default function RemindersScreen() {
             >
               <Stepper
                 label={t("Hour")}
-                value={String(((r.hour + 11) % 12) + 1)}
-                onMinus={() => stepHour(key, -1)}
-                onPlus={() => stepHour(key, 1)}
+                value={String(((rem.hour + 11) % 12) + 1)}
+                onMinus={() => stepHour(-1)}
+                onPlus={() => stepHour(1)}
               />
               <Stepper
                 label={t("Minute")}
-                value={String(r.minute).padStart(2, "0")}
-                onMinus={() => stepMinute(key, -5)}
-                onPlus={() => stepMinute(key, 5)}
+                value={String(rem.minute).padStart(2, "0")}
+                onMinus={() => stepMinute(-5)}
+                onPlus={() => stepMinute(5)}
               />
               <Chip
-                label={r.hour >= 12 ? "PM" : "AM"}
+                label={rem.hour >= 12 ? "PM" : "AM"}
                 active
-                color={tone}
-                onPress={() => stepHour(key, 12)}
+                onPress={() => stepHour(12)}
               />
             </View>
-          </Card>
-        );
-      })}
-
-      <Card>
-        <T kind="title">{t("Test")}</T>
-        <Button
-          label={t("Send test notification")}
-          icon="notifications"
-          onPress={sendTest}
-        />
+          </>
+        ) : null}
       </Card>
     </Screen>
   );

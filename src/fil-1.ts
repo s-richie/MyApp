@@ -1,22 +1,24 @@
 const fil: Record<string, string> = {
   // Splash + tabs
   "Save smart. Spend wise.": "Mag-ipon nang matalino. Gumastos nang tama.",
-  "History": "Kasaysayan",
+  History: "Kasaysayan",
   "Utang & Ambagan": "Utang at Ambagan",
-  "More": "Iba pa",
+  More: "Iba pa",
 
   // More screen
   "Tips, streaks, badges and challenges": "Mga tip, streak, badge at hamon",
-  "Recurring": "Paulit-ulit",
+  Recurring: "Paulit-ulit",
   "Baon, subscriptions and other repeating entries":
     "Baon, subscription at iba pang paulit-ulit na entry",
-  "Reminders": "Mga paalala",
+  Reminders: "Mga paalala",
   "Daily reminders to save and log your spending":
     "Araw-araw na paalala para mag-ipon at mag-log ng gastos",
   "Export & share": "I-export at ibahagi",
-  "Monthly summary and CSV of your entries": "Buwanang buod at CSV ng mga entry mo",
-  "Settings": "Mga setting",
-  "Dark mode, language, PIN lock and wallets": "Dark mode, wika, PIN lock at mga wallet",
+  "Monthly summary and CSV of your entries":
+    "Buwanang buod at CSV ng mga entry mo",
+  Settings: "Mga setting",
+  "Dark mode, language, PIN lock and wallets":
+    "Dark mode, wika, PIN lock at mga wallet",
 
   // Dashboard
   "Total balance (all wallets)": "Kabuuang balanse (lahat ng wallet)",
@@ -27,8 +29,8 @@ const fil: Record<string, string> = {
   "{p}% of ₱{n} used": "{p}% ng ₱{n} ang nagamit",
   "💡 You can spend about ₱{a} per day ({d} left)":
     "💡 Pwede kang gumastos ng mga ₱{a} bawat araw ({d} pa)",
-  "day": "araw",
-  "days": "araw",
+  day: "araw",
+  days: "araw",
   "Where your money went": "Saan napunta ang pera mo",
   "No expenses this month yet.": "Wala pang gastos ngayong buwan.",
   "Ipon goals (all time)": "Mga goal sa ipon (lahat ng panahon)",
@@ -39,21 +41,21 @@ const fil: Record<string, string> = {
   "No entries this month yet.": "Wala pang entry ngayong buwan.",
 
   // Categories
-  "Food": "Pagkain",
-  "Fare": "Pamasahe",
-  "Load": "Load",
-  "School": "Eskwela",
-  "Bills": "Bayarin",
-  "Shopping": "Pamimili",
-  "Other": "Iba pa",
+  Food: "Pagkain",
+  Fare: "Pamasahe",
+  Load: "Load",
+  School: "Eskwela",
+  Bills: "Bayarin",
+  Shopping: "Pamimili",
+  Other: "Iba pa",
 
   // Settings
   "Dark theme is on": "Naka-on ang dark theme",
   "Light theme is on": "Naka-on ang light theme",
-  "Language": "Wika",
+  Language: "Wika",
   "Choose the app language.": "Piliin ang wika ng app.",
-  "Wallets": "Mga wallet",
-  "Wallet": "Wallet",
+  Wallets: "Mga wallet",
+  Wallet: "Wallet",
   "New wallet": "Bagong wallet",
   "Edit wallet": "I-edit ang wallet",
   "Balance = starting balance + ipon − gastos. Edit the starting balance anytime to match the money you really have.":
@@ -61,16 +63,16 @@ const fil: Record<string, string> = {
   "Starting balance: ₱{n}": "Panimulang balanse: ₱{n}",
   "Name (e.g. Maya, Bank)": "Pangalan (hal. Maya, Bank)",
   "Starting balance (₱)": "Panimulang balanse (₱)",
-  "Cancel": "Kanselahin",
-  "Save": "I-save",
-  "Delete": "Burahin",
+  Cancel: "Kanselahin",
+  Save: "I-save",
+  Delete: "Burahin",
   "Can't delete": "Hindi mabubura",
   "You need at least one wallet.": "Kailangan mo ng kahit isang wallet.",
   'Delete "{name}"?': 'Burahin ang "{name}"?',
   "Its entries will be moved to another wallet.":
     "Ililipat sa ibang wallet ang mga entry nito.",
 
-  // Ipon Bot tips
+  // MoneyMate tips
   "Naku! You're over budget by ₱{n} this month. Try holding off on non-essentials. 😅":
     "Naku! Lampas ka na sa budget ng ₱{n} ngayong buwan. Iwasan muna ang mga hindi kailangang bilhin. 😅",
   "Heads up! You've used {p}% of your budget. Slow down on gastos! 🐢":
@@ -89,8 +91,8 @@ const fil: Record<string, string> = {
     "Wala pang ipon ngayon. Kahit ₱10, counted! 💰",
   "Most of your gastos ({p}%) goes to {cat}. Maybe set a limit?":
     "Karamihan ng gastos mo ({p}%) ay napupunta sa {cat}. Baka pwedeng maglagay ng limit?",
-  "Hi! I'm Ipon Bot 🤖 Add your ipon and gastos and I'll give you tips.":
-    "Hi! Ako si Ipon Bot 🤖 I-add mo ang ipon at gastos mo at bibigyan kita ng tips.",
+  "Hi! I'm MoneyMate 🤖 Add your ipon and gastos and I'll give you tips.":
+    "Hi! Ako si MoneyMate 🤖 I-add mo ang ipon at gastos mo at bibigyan kita ng tips.",
   "Tip: Save first, then spend what's left. 😉":
     "Tip: Mag-ipon muna, saka gastusin ang matitira. 😉",
   "Tap for another tip ({i}/{n})": "I-tap para sa ibang tip ({i}/{n})",

@@ -1,17 +1,23 @@
-import { useEffect, useState } from "react";
-import { View, Pressable, ScrollView, BackHandler } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { BackHandler, Pressable, ScrollView, View } from "react-native";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import { T, IconCircle, IconName } from "../ui";
-import Utang from "./utang";
-import Bot from "./bot";
-import RecurringScreen from "./recurring";
-import ExportScreen from "./export";
-import Settings from "./settings";
 import RemindersScreen from "../reminders-screen";
+import { IconCircle, IconName, T } from "../ui";
+import Bot from "./bot";
+import ExportScreen from "./export";
+import RecurringScreen from "./recurring";
+import Settings from "./settings";
+import Utang from "./utang";
 
-type Section = "utang" | "bot" | "recurring" | "reminders" | "export" | "settings";
+type Section =
+  | "utang"
+  | "bot"
+  | "recurring"
+  | "reminders"
+  | "export"
+  | "settings";
 
 const ITEMS: {
   key: Section;
@@ -30,7 +36,7 @@ const ITEMS: {
   {
     key: "bot",
     icon: "happy",
-    title: "Ipon Bot",
+    title: "MoneyMate",
     desc: "Streaks and challenges",
     file: "src/app/bot.tsx",
   },

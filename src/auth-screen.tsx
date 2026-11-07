@@ -2,13 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
   Pressable,
   ScrollView,
-  StatusBar,
   Text,
   useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "./app-theme";
 import { HeroBackdrop } from "./hero-decor";
 import { useI18n } from "./i18n";
@@ -36,6 +37,7 @@ export function AuthScreen({
 }: Props) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
 
   const [mode, setMode] = useState<Mode>("in");
@@ -162,8 +164,10 @@ export function AuthScreen({
     });
   };
 
-  const heroH = Math.max(190, Math.round(height * 0.27));
-  const topPad = StatusBar.currentHeight ?? 24;
+  // hero and robot scale with the screen height
+  const heroBody = Math.max(150, Math.min(Math.round(height * 0.24), 240));
+  const heroH = heroBody + insets.top;
+  const robot = Math.min(96, Math.round(heroBody * 0.5));
 
   const mainLabel =
     mode === "in"
@@ -222,7 +226,7 @@ export function AuthScreen({
       <View
         style={{
           height: heroH,
-          paddingTop: topPad,
+          paddingTop: insets.top,
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
@@ -231,11 +235,14 @@ export function AuthScreen({
         <HeroBackdrop />
         <Image
           source={require("../assets/images/splash-icon.png")}
-          style={{ width: 96, height: 96 }}
+          style={{ width: robot, height: robot }}
           resizeMode="contain"
         />
-        <Text style={{ color: "#fff", fontSize: 26, fontWeight: "800" }}>
-          Ipon Bot
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{ color: "#fff", fontSize: 26, fontWeight: "800" }}
+        >
+          MoneyMate
         </Text>
       </View>
 
@@ -249,170 +256,185 @@ export function AuthScreen({
           marginTop: -28,
         }}
       >
-        <ScrollView
-          contentContainerStyle={{ padding: 24, paddingTop: 26 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {mode === "reset" ? (
-            <>
-              <T kind="title" style={{ textAlign: "center", fontSize: 18 }}>
-                {t("Reset password")}
-              </T>
-              {step === "email" ? (
-                <T
-                  kind="muted"
-                  style={{
-                    textAlign: "center",
-                    marginTop: 4,
-                    marginBottom: 12,
-                  }}
-                >
-                  {t("We'll email you a code.")}
-                </T>
-              ) : (
-                <View style={{ height: 12 }} />
-              )}
-            </>
-          ) : (
-            <>
-              <T kind="muted" style={{ textAlign: "center", marginBottom: 16 }}>
-                {t("Back up your data across phones.")}
-              </T>
-
-              {/* Sign in / Create account */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  backgroundColor: colors.card,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: 4,
-                  marginBottom: 12,
-                }}
-              >
-                {(["in", "up"] as const).map((m) => {
-                  const active = mode === m;
-                  return (
-                    <Pressable
-                      key={m}
-                      onPress={() => switchMode(m)}
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          <ScrollView
+            contentContainerStyle={{
+              padding: 24,
+              paddingTop: 26,
+              paddingBottom: 24 + insets.bottom,
+              alignItems: "center",
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={{ width: "100%", maxWidth: 480 }}>
+              {mode === "reset" ? (
+                <>
+                  <T kind="title" style={{ textAlign: "center", fontSize: 18 }}>
+                    {t("Reset password")}
+                  </T>
+                  {step === "email" ? (
+                    <T
+                      kind="muted"
                       style={{
-                        flex: 1,
-                        padding: 10,
-                        borderRadius: 9,
-                        alignItems: "center",
-                        backgroundColor: active ? colors.green : "transparent",
+                        textAlign: "center",
+                        marginTop: 4,
+                        marginBottom: 12,
                       }}
                     >
-                      <T
-                        color={active ? "#fff" : colors.text}
-                        style={{ fontWeight: "700" }}
-                      >
-                        {m === "in" ? t("Sign in") : t("Create account")}
-                      </T>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
+                      {t("We'll email you a code.")}
+                    </T>
+                  ) : (
+                    <View style={{ height: 12 }} />
+                  )}
+                </>
+              ) : (
+                <>
+                  <T
+                    kind="muted"
+                    style={{ textAlign: "center", marginBottom: 16 }}
+                  >
+                    {t("Back up your data across phones.")}
+                  </T>
 
-          <Field
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!(mode === "reset" && step === "code")}
-          />
+                  {/* Sign in / Create account */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      backgroundColor: colors.card,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      padding: 4,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {(["in", "up"] as const).map((m) => {
+                      const active = mode === m;
+                      return (
+                        <Pressable
+                          key={m}
+                          onPress={() => switchMode(m)}
+                          style={{
+                            flex: 1,
+                            padding: 10,
+                            borderRadius: 9,
+                            alignItems: "center",
+                            backgroundColor: active
+                              ? colors.green
+                              : "transparent",
+                          }}
+                        >
+                          <T
+                            color={active ? "#fff" : colors.text}
+                            numberOfLines={1}
+                            style={{ fontWeight: "700" }}
+                          >
+                            {m === "in" ? t("Sign in") : t("Create account")}
+                          </T>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
 
-          {mode === "reset" ? (
-            step === "code" ? (
-              <>
-                <Field
-                  placeholder={t("Code")}
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  maxLength={10}
+              <Field
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!(mode === "reset" && step === "code")}
+              />
+
+              {mode === "reset" ? (
+                step === "code" ? (
+                  <>
+                    <Field
+                      placeholder={t("Code")}
+                      value={code}
+                      onChangeText={setCode}
+                      keyboardType="number-pad"
+                      maxLength={10}
+                    />
+                    {passwordField(t("New password"))}
+                  </>
+                ) : null
+              ) : (
+                passwordField("Password")
+              )}
+
+              {mode === "in" ? (
+                <Pressable
+                  onPress={() => switchMode("reset")}
+                  style={{ alignSelf: "flex-end", paddingVertical: 6 }}
+                >
+                  <T color={colors.blue} style={{ fontWeight: "600" }}>
+                    {t("Forgot password?")}
+                  </T>
+                </Pressable>
+              ) : null}
+
+              {mode === "up" ? (
+                <T kind="muted" style={{ marginTop: 2 }}>
+                  {t("Your entries are saved to the cloud.")}
+                </T>
+              ) : null}
+
+              {error ? (
+                <T color={colors.red} style={{ marginTop: 4 }}>
+                  {error}
+                </T>
+              ) : null}
+              {info ? (
+                <T color={colors.green} style={{ marginTop: 4 }}>
+                  {info}
+                </T>
+              ) : null}
+
+              <View style={{ marginTop: 8 }}>
+                <Button
+                  label={busy ? "..." : mainLabel}
+                  icon={busy ? undefined : "arrow-forward"}
+                  onPress={submit}
                 />
-                {passwordField(t("New password"))}
-              </>
-            ) : null
-          ) : (
-            passwordField("Password")
-          )}
+              </View>
 
-          {mode === "in" ? (
-            <Pressable
-              onPress={() => switchMode("reset")}
-              style={{ alignSelf: "flex-end", paddingVertical: 6 }}
-            >
-              <T color={colors.blue} style={{ fontWeight: "600" }}>
-                {t("Forgot password?")}
-              </T>
-            </Pressable>
-          ) : null}
+              {mode === "reset" && step === "code" ? (
+                <Pressable
+                  onPress={() => sendCode(email.trim().toLowerCase())}
+                  style={{ padding: 10, alignItems: "center" }}
+                >
+                  <T color={colors.blue} style={{ fontWeight: "600" }}>
+                    {t("Send a new code")}
+                  </T>
+                </Pressable>
+              ) : null}
 
-          {mode === "up" ? (
-            <T kind="muted" style={{ marginTop: 2 }}>
-              {t("Your entries are saved to the cloud.")}
-            </T>
-          ) : null}
-
-          {error ? (
-            <T color={colors.red} style={{ marginTop: 4 }}>
-              {error}
-            </T>
-          ) : null}
-          {info ? (
-            <T color={colors.green} style={{ marginTop: 4 }}>
-              {info}
-            </T>
-          ) : null}
-
-          <View style={{ marginTop: 8 }}>
-            <Button
-              label={busy ? "..." : mainLabel}
-              icon={busy ? undefined : "arrow-forward"}
-              onPress={submit}
-            />
-          </View>
-
-          {mode === "reset" && step === "code" ? (
-            <Pressable
-              onPress={() => sendCode(email.trim().toLowerCase())}
-              style={{ padding: 10, alignItems: "center" }}
-            >
-              <T color={colors.blue} style={{ fontWeight: "600" }}>
-                {t("Send a new code")}
-              </T>
-            </Pressable>
-          ) : null}
-
-          {mode === "reset" ? (
-            <Pressable
-              onPress={() => switchMode("in")}
-              style={{ padding: 10, alignItems: "center" }}
-            >
-              <T color={colors.subtext} style={{ fontWeight: "600" }}>
-                {t("Back to sign in")}
-              </T>
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={onSkip}
-              style={{ padding: 14, alignItems: "center" }}
-            >
-              <T color={colors.subtext} style={{ fontWeight: "600" }}>
-                {canCancel ? t("Cancel") : t("Continue without account")}
-              </T>
-            </Pressable>
-          )}
-        </ScrollView>
+              {mode === "reset" ? (
+                <Pressable
+                  onPress={() => switchMode("in")}
+                  style={{ padding: 10, alignItems: "center" }}
+                >
+                  <T color={colors.subtext} style={{ fontWeight: "600" }}>
+                    {t("Back to sign in")}
+                  </T>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={onSkip}
+                  style={{ padding: 14, alignItems: "center" }}
+                >
+                  <T color={colors.subtext} style={{ fontWeight: "600" }}>
+                    {canCancel ? t("Cancel") : t("Continue without account")}
+                  </T>
+                </Pressable>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     </View>
   );

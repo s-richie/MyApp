@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { View, Image, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Image, Pressable, View } from "react-native";
+import { Entry, categoryOf, useData } from "./app-data";
 import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
-import { useData, Entry, categoryOf } from "./app-data";
 import { T } from "./ui";
 
 export const dayKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
+    d.getDate(),
   ).padStart(2, "0")}`;
 
 export const BADGES = [
@@ -18,13 +18,12 @@ export const BADGES = [
   { days: 30, icon: "trophy" as const, color: "#f59e0b", label: "30 days" },
 ];
 
+// A streak is the number of days in a row you logged something
 export function computeStreak(entries: Entry[]) {
   const days = new Set<string>();
-  entries.forEach((e) => {
-    if (e.kind === "ipon") days.add(dayKey(new Date(e.date)));
-  });
+  entries.forEach((e) => days.add(dayKey(new Date(e.date))));
 
-  // Current streak: count back from today (or from yesterday if no ipon yet today)
+  // Current streak: count back from today (or from yesterday if nothing yet today)
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
   const today = days.has(dayKey(cursor));
@@ -58,7 +57,7 @@ export function computeStreak(entries: Entry[]) {
 
 function useTips(): string[] {
   const { t } = useI18n();
-  const { entries, goals, goalSaved, budget, monthSpent, monthEntries, isCurrentMonth } =
+  const { entries, budget, monthSpent, monthEntries, isCurrentMonth } =
     useData();
   const tips: string[] = [];
 
@@ -71,43 +70,35 @@ function useTips(): string[] {
       tips.push(
         t("Over budget by ₱{n}. Slow down on spending.", {
           n: Math.abs(remaining).toLocaleString(),
-        })
+        }),
       );
     } else if (used >= 0.8) {
       tips.push(
-        t("{p}% of your budget is used. Careful!", { p: Math.round(used * 100) })
+        t("{p}% of your budget is used. Careful!", {
+          p: Math.round(used * 100),
+        }),
       );
     } else if (monthSpent > 0) {
       tips.push(
-        t("{p}% of your budget used. Nice pace!", { p: Math.round(used * 100) })
+        t("{p}% of your budget used. Nice pace!", {
+          p: Math.round(used * 100),
+        }),
       );
     }
   }
-
-  // Goal tips
-  goals.forEach((g) => {
-    if (g.target <= 0) return;
-    const done = goalSaved(g.id);
-    const left = g.target - done;
-    if (left <= 0) {
-      tips.push(t("{name} goal reached. Congrats!", { name: g.name }));
-    } else if (done / g.target >= 0.8) {
-      tips.push(
-        t("₱{n} to go for {name}!", { n: left.toLocaleString(), name: g.name })
-      );
-    }
-  });
 
   // Streak tips
   const streak = computeStreak(entries);
   if (streak.current >= 3) {
-    tips.push(t("{n}-day ipon streak. Keep going!", { n: streak.current }));
+    tips.push(t("{n}-day streak. Keep going!", { n: streak.current }));
   }
   if (!streak.today) {
     tips.push(
       streak.current > 0
-        ? t("Save today to keep your {n}-day streak.", { n: streak.current })
-        : t("No ipon yet today. Even ₱10 counts.")
+        ? t("Log something today to keep your {n}-day streak.", {
+            n: streak.current,
+          })
+        : t("Nothing logged yet today."),
     );
   }
 
@@ -133,15 +124,15 @@ function useTips(): string[] {
         t("{p}% of spending goes to {cat}.", {
           p: pct,
           cat: t(categoryOf(topKey).label),
-        })
+        }),
       );
     }
   }
 
   if (entries.length === 0) {
-    tips.push(t("Hi, I'm Ipon Bot! Add an ipon to start."));
+    tips.push(t("Hi, I'm MoneyMate! Add your money to start."));
   }
-  tips.push(t("Tip: save first, spend what's left."));
+  tips.push(t("Tip: log your gastos every day."));
 
   return tips;
 }

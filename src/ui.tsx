@@ -1,22 +1,27 @@
-import { ReactNode, ComponentProps } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { ComponentProps, ReactNode } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
+  KeyboardAvoidingView,
   Modal,
+  Pressable,
   ScrollView,
   StyleProp,
-  TextStyle,
-  ViewStyle,
+  StyleSheet,
+  Text,
+  TextInput,
   TextInputProps,
+  TextStyle,
+  View,
+  ViewStyle,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { categoryOf, DEFAULT_GOAL_ID, Entry, Goal } from "./app-data";
 import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
-import { Entry, Goal, categoryOf, DEFAULT_GOAL_ID } from "./app-data";
 
 export type IconName = ComponentProps<typeof Ionicons>["name"];
+
+// How much the phone's "font size" setting may enlarge our text
+const MAX_FONT_SCALE = 1.3;
 
 // Old data saved emoji. These map them to icons.
 const LEGACY: Record<string, IconName> = {
@@ -64,7 +69,7 @@ export const peso = (n: number) =>
 
 export function iconOf(
   item: { icon?: string; emoji?: string },
-  fallback: IconName
+  fallback: IconName,
 ): IconName {
   const raw = item.icon ?? item.emoji;
   if (raw && raw in Ionicons.glyphMap) return raw as IconName;
@@ -72,7 +77,10 @@ export function iconOf(
   return fallback;
 }
 
-export const safeIcon = (name: string | undefined, fallback: IconName): IconName =>
+export const safeIcon = (
+  name: string | undefined,
+  fallback: IconName,
+): IconName =>
   name && name in Ionicons.glyphMap ? (name as IconName) : fallback;
 
 export function entryIcon(e: Entry, goals: Goal[]): IconName {
@@ -84,11 +92,13 @@ export function entryIcon(e: Entry, goals: Goal[]): IconName {
 export function entryTitle(
   e: Entry,
   goals: Goal[],
-  t: (s: string) => string
+  t: (s: string) => string,
 ): string {
   if (e.note) return e.note;
   if (e.kind === "gastos") return t(categoryOf(e.category).label);
-  return goals.find((g) => g.id === (e.goalId ?? DEFAULT_GOAL_ID))?.name ?? "Ipon";
+  return (
+    goals.find((g) => g.id === (e.goalId ?? DEFAULT_GOAL_ID))?.name ?? "Ipon"
+  );
 }
 
 // ---------- Text ----------
@@ -101,12 +111,15 @@ export function T({
   color,
   style,
   numberOfLines,
+  fit,
 }: {
   children?: ReactNode;
   kind?: Kind;
   color?: string;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
+  // true/false forces shrink-to-fit. Default: large text shrinks instead of overflowing.
+  fit?: boolean;
 }) {
   const { colors } = useTheme();
   const base: Record<Kind, TextStyle> = {
@@ -116,9 +129,17 @@ export function T({
     label: { fontSize: 13, fontWeight: "600", color: colors.subtext },
     body: { fontSize: 15, color: colors.text },
   };
+
+  const flat = StyleSheet.flatten(style) as TextStyle | undefined;
+  const size = flat?.fontSize ?? base[kind].fontSize ?? 15;
+  const autoFit = fit ?? (size >= 20 && numberOfLines === undefined);
+
   return (
     <Text
-      numberOfLines={numberOfLines}
+      numberOfLines={autoFit ? 1 : numberOfLines}
+      adjustsFontSizeToFit={autoFit}
+      minimumFontScale={autoFit ? 0.55 : undefined}
+      maxFontSizeMultiplier={MAX_FONT_SCALE}
       style={[base[kind], color ? { color } : null, style]}
     >
       {children}
@@ -131,13 +152,15 @@ export function T({
 export function Screen({ children }: { children: ReactNode }) {
   const { colors } = useTheme();
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      keyboardShouldPersistTaps="handled"
-    >
-      {children}
-    </ScrollView>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <ScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -200,9 +223,12 @@ export function SectionHeader({
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 10,
+        gap: 8,
       }}
     >
-      <T kind="title">{title}</T>
+      <T kind="title" style={{ flex: 1 }} numberOfLines={1}>
+        {title}
+      </T>
       {actionLabel && onAction ? (
         <Pressable
           onPress={onAction}
@@ -217,7 +243,12 @@ export function SectionHeader({
           }}
         >
           <Ionicons name="add" size={18} color="#fff" />
-          <Text style={{ color: "#fff", fontWeight: "700" }}>{actionLabel}</Text>
+          <Text
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
+            style={{ color: "#fff", fontWeight: "700" }}
+          >
+            {actionLabel}
+          </Text>
         </Pressable>
       ) : null}
     </View>
@@ -340,7 +371,11 @@ export function Row({
           ) : null}
         </View>
         {amount ? (
-          <T color={tone} style={{ fontWeight: "700" }}>
+          <T
+            color={tone}
+            numberOfLines={1}
+            style={{ fontWeight: "700", flexShrink: 0 }}
+          >
             {amount}
           </T>
         ) : null}
@@ -390,6 +425,7 @@ export function Chip({
         />
       ) : null}
       <Text
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
         style={{
           color: active ? "#fff" : colors.text,
           fontWeight: active ? "700" : "400",
@@ -437,10 +473,12 @@ export function Button({
         <Ionicons name={icon} size={20} color={outline ? tone : "#fff"} />
       ) : null}
       <Text
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
         style={{
           color: outline ? tone : "#fff",
           fontWeight: "700",
           fontSize: 15,
+          flexShrink: 1,
         }}
       >
         {label}
@@ -454,6 +492,7 @@ export function Field(props: TextInputProps) {
   return (
     <TextInput
       placeholderTextColor={colors.subtext}
+      maxFontSizeMultiplier={MAX_FONT_SCALE}
       {...props}
       style={[
         {
@@ -544,45 +583,50 @@ export function Sheet({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "center",
-          padding: 20,
-        }}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View
           style={{
-            backgroundColor: colors.card,
-            borderRadius: 20,
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
             padding: 20,
-            borderWidth: 1,
-            borderColor: colors.border,
-            maxHeight: "90%",
           }}
         >
-          <ScrollView keyboardShouldPersistTaps="handled">
-            <T kind="title" style={{ fontSize: 18, marginBottom: 6 }}>
-              {title}
-            </T>
-            {children}
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Button
-                  label={t("Cancel")}
-                  onPress={onClose}
-                  outline
-                  color={colors.subtext}
-                />
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              alignSelf: "center",
+              backgroundColor: colors.card,
+              borderRadius: 20,
+              padding: 20,
+              borderWidth: 1,
+              borderColor: colors.border,
+              maxHeight: "92%",
+            }}
+          >
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <T kind="title" style={{ fontSize: 18, marginBottom: 6 }}>
+                {title}
+              </T>
+              {children}
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label={t("Cancel")}
+                    onPress={onClose}
+                    outline
+                    color={colors.subtext}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button label={saveLabel ?? t("Save")} onPress={onSave} />
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Button label={saveLabel ?? t("Save")} onPress={onSave} />
-              </View>
-            </View>
-          </ScrollView>
+            </ScrollView>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -1,25 +1,28 @@
-import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { BackHandler, Pressable, View } from "react-native";
+import { CATEGORIES, categoryOf, useData } from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import { useData, CATEGORIES, categoryOf } from "../app-data";
-import { MonthPicker } from "../month-picker";
 import { BotTip } from "../ipon-bot";
+import { moneyIcon, moneyTitle } from "../money";
+import { MonthPicker } from "../month-picker";
 import {
-  Screen,
-  Card,
-  T,
-  Progress,
-  IconCircle,
-  Row,
   Button,
+  Card,
+  IconCircle,
   iconOf,
-  entryIcon,
-  entryTitle,
-  safeIcon,
   peso,
+  Progress,
+  Row,
+  safeIcon,
+  Screen,
+  T,
 } from "../ui";
+import Utang from "./utang";
+
+type View_ = "utang" | "ambagan" | null;
 
 export default function Dashboard() {
   const { colors } = useTheme();
@@ -27,16 +30,61 @@ export default function Dashboard() {
   const router = useRouter();
   const {
     entries,
-    goals,
-    goalSaved,
     wallets,
     walletBalance,
+    debts,
     budget,
     monthEntries,
     monthSaved,
     monthSpent,
     isCurrentMonth,
   } = useData();
+
+  // Opens Utang or Ambagan right here on Home
+  const [view, setView] = useState<View_>(null);
+
+  useEffect(() => {
+    if (!view) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      setView(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [view]);
+
+  if (view) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Pressable
+          onPress={() => setView(null)}
+          hitSlop={8}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderBottomWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+          }}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.green} />
+          <T color={colors.green} style={{ fontSize: 16, marginLeft: 2 }}>
+            Home
+          </T>
+          <T
+            kind="title"
+            style={{ flex: 1, textAlign: "center", marginRight: 60 }}
+          >
+            {t("Utang & Ambagan")}
+          </T>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Utang initialTab={view} />
+        </View>
+      </View>
+    );
+  }
 
   const total = wallets.reduce((a, w) => a + walletBalance(w.id), 0);
 
@@ -46,14 +94,27 @@ export default function Dashboard() {
   const used = budgetNum > 0 ? monthSpent / budgetNum : 0;
 
   const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+  ).getDate();
   const daysLeft = daysInMonth - now.getDate() + 1;
   const perDay = daysLeft > 0 ? Math.floor(remaining / daysLeft) : 0;
+
+  const owedTotal = debts
+    .filter((d) => d.direction === "owed")
+    .reduce((a, d) => a + Math.max(d.amount - d.paid, 0), 0);
+  const oweTotal = debts
+    .filter((d) => d.direction === "owe")
+    .reduce((a, d) => a + Math.max(d.amount - d.paid, 0), 0);
 
   const byCategory = CATEGORIES.map((c) => ({
     ...c,
     total: monthEntries
-      .filter((e) => e.kind === "gastos" && categoryOf(e.category).key === c.key)
+      .filter(
+        (e) => e.kind === "gastos" && categoryOf(e.category).key === c.key,
+      )
       .reduce((a, e) => a + e.amount, 0),
   }))
     .filter((c) => c.total > 0)
@@ -72,7 +133,7 @@ export default function Dashboard() {
           <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}>
             <View style={{ flex: 1 }}>
               <Button
-                label={t("Add ipon")}
+                label={t("Add money")}
                 icon="add-circle"
                 onPress={() => router.navigate("/ipon" as any)}
               />
@@ -89,9 +150,9 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Balance */}
+      {/* Total money */}
       <Card>
-        <T kind="label">{t("Balance")}</T>
+        <T kind="label">{t("Total money")}</T>
         <T kind="big" color={total < 0 ? colors.red : undefined}>
           {peso(total)}
         </T>
@@ -116,12 +177,64 @@ export default function Dashboard() {
           })}
       </Card>
 
-      {/* Saved / Spent */}
+      {/* Utang & Ambagan */}
+      <Card>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <IconCircle name="people" size={34} color={colors.blue} />
+          <T kind="title" style={{ flex: 1 }} numberOfLines={1}>
+            {t("Utang & Ambagan")}
+          </T>
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
+          <View style={{ flex: 1 }}>
+            <T kind="label">{t("They owe me")}</T>
+            <T
+              color={colors.green}
+              style={{ fontSize: 20, fontWeight: "800", marginTop: 2 }}
+            >
+              {peso(owedTotal)}
+            </T>
+          </View>
+          <View style={{ flex: 1 }}>
+            <T kind="label">{t("I owe")}</T>
+            <T
+              color={colors.red}
+              style={{ fontSize: 20, fontWeight: "800", marginTop: 2 }}
+            >
+              {peso(oweTotal)}
+            </T>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 4 }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              label="Utang"
+              icon="swap-horizontal"
+              outline
+              color={colors.blue}
+              onPress={() => setView("utang")}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              label="Ambagan"
+              icon="restaurant"
+              outline
+              color={colors.blue}
+              onPress={() => setView("ambagan")}
+            />
+          </View>
+        </View>
+      </Card>
+
+      {/* Income / Spent */}
       <View style={{ flexDirection: "row", gap: 12 }}>
         <Card style={{ flex: 1 }}>
           <IconCircle name="trending-up" size={34} />
           <T kind="label" style={{ marginTop: 8 }}>
-            {t("Saved")}
+            {t("Income")}
           </T>
           <T color={colors.green} style={{ fontSize: 22, fontWeight: "800" }}>
             {peso(monthSaved)}
@@ -173,34 +286,6 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Goals */}
-      <Card>
-        <T kind="label">{t("Goals")}</T>
-        {goals.map((g) => {
-          const done = goalSaved(g.id);
-          const pct = g.target > 0 ? Math.min(done / g.target, 1) : 0;
-          return (
-            <View key={g.id} style={{ marginTop: 14 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <IconCircle name={iconOf(g, "flag")} size={34} />
-                <View style={{ flex: 1 }}>
-                  <T numberOfLines={1}>{g.name}</T>
-                  <T kind="muted">
-                    {peso(done)} / {peso(g.target)}
-                  </T>
-                </View>
-                {pct >= 1 ? (
-                  <Ionicons name="checkmark-circle" size={24} color={colors.green} />
-                ) : (
-                  <T kind="label">{Math.round(pct * 100)}%</T>
-                )}
-              </View>
-              <Progress value={pct} color={colors.green} />
-            </View>
-          );
-        })}
-      </Card>
-
       {/* Where it went */}
       {byCategory.length > 0 && (
         <Card>
@@ -209,7 +294,13 @@ export default function Dashboard() {
             const pct = monthSpent > 0 ? c.total / monthSpent : 0;
             return (
               <View key={c.key} style={{ marginTop: 14 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
                   <IconCircle
                     name={safeIcon(c.icon, "apps")}
                     size={30}
@@ -237,15 +328,15 @@ export default function Dashboard() {
             </T>
           ) : (
             recent.map((e) => {
-              const isIpon = e.kind === "ipon";
+              const isIn = e.kind === "ipon";
               return (
                 <Row
                   key={e.id}
-                  icon={entryIcon(e, goals)}
-                  tone={isIpon ? colors.green : colors.red}
-                  title={entryTitle(e, goals, t)}
+                  icon={moneyIcon(e)}
+                  tone={isIn ? colors.green : colors.red}
+                  title={moneyTitle(e, t)}
                   sub={fdate(e.date)}
-                  amount={`${isIpon ? "+" : "-"}${peso(e.amount)}`}
+                  amount={`${isIn ? "+" : "-"}${peso(e.amount)}`}
                 />
               );
             })

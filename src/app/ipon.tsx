@@ -1,156 +1,217 @@
-import { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Alert, Pressable, View } from "react-native";
+import { INCOME_SOURCES, useData, Wallet } from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import { useData, Goal } from "../app-data";
-import { WalletPicker } from "../wallet-picker";
+import { moneyIcon, moneyTitle } from "../money";
 import {
-  Screen,
-  Card,
-  T,
-  Progress,
-  IconCircle,
-  Row,
   Button,
+  Card,
+  Chip,
+  Chips,
   Field,
-  Sheet,
-  IconPicker,
-  SectionHeader,
+  IconCircle,
   iconOf,
-  entryIcon,
-  entryTitle,
+  IconPicker,
   peso,
-  GOAL_ICONS,
+  Row,
+  safeIcon,
+  Screen,
+  SectionHeader,
+  Sheet,
+  T,
+  WALLET_ICONS,
 } from "../ui";
 
-export default function Ipon() {
+export default function MyMoney() {
   const { colors } = useTheme();
-  const { t, fdate } = useI18n();
+  const { t, fdate, localizeMonth } = useI18n();
   const {
     entries,
     addEntry,
-    goals,
-    addGoal,
-    updateGoal,
-    deleteGoal,
-    goalSaved,
     wallets,
+    addWallet,
+    updateWallet,
+    deleteWallet,
+    walletBalance,
+    setWalletBalance,
+    monthLabel,
+    monthSaved,
+    monthSpent,
   } = useData();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [walletId, setWalletId] = useState("");
+  const [source, setSource] = useState("allowance");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
 
-  // goal sheet
+  // wallet sheet
   const [sheet, setSheet] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [gName, setGName] = useState("");
-  const [gIcon, setGIcon] = useState<string>(GOAL_ICONS[0]);
-  const [gTarget, setGTarget] = useState("");
+  const [wName, setWName] = useState("");
+  const [wIcon, setWIcon] = useState<string>(WALLET_ICONS[0]);
+  const [wMoney, setWMoney] = useState("");
 
-  const selected = goals.find((g) => g.id === selectedId) ?? goals[0];
-  const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
+  const total = wallets.reduce((a, w) => a + walletBalance(w.id), 0);
+  const selected = wallets.find((w) => w.id === selectedId) ?? wallets[0];
   const recent = entries.filter((e) => e.kind === "ipon").slice(0, 3);
 
   const handleAdd = () => {
     const value = Number(amount);
     if (!value || value <= 0 || !selected) return;
-    addEntry("ipon", value, note, selected.id, activeWallet);
+    addEntry("ipon", value, note, source, selected.id);
     setAmount("");
     setNote("");
   };
 
   const openNew = () => {
     setEditingId(null);
-    setGName("");
-    setGIcon(GOAL_ICONS[0]);
-    setGTarget("");
+    setWName("");
+    setWIcon(WALLET_ICONS[0]);
+    setWMoney("");
     setSheet(true);
   };
 
-  const openEdit = (g: Goal) => {
-    setEditingId(g.id);
-    setGName(g.name);
-    setGIcon(iconOf(g, "flag"));
-    setGTarget(String(g.target));
+  const openEdit = (w: Wallet) => {
+    setEditingId(w.id);
+    setWName(w.name);
+    setWIcon(iconOf(w, "wallet"));
+    setWMoney(String(Math.round(walletBalance(w.id) * 100) / 100));
     setSheet(true);
   };
 
-  const saveGoal = () => {
-    const target = Number(gTarget);
-    if (!gName.trim() || !target || target <= 0) return;
+  const saveWallet = () => {
+    const money = Number(wMoney === "" ? "0" : wMoney);
+    if (!wName.trim() || isNaN(money)) return;
     if (editingId) {
-      updateGoal(editingId, { name: gName.trim(), icon: gIcon, target });
+      updateWallet(editingId, { name: wName.trim(), icon: wIcon });
+      setWalletBalance(editingId, money);
     } else {
-      const id = addGoal(gName.trim(), gIcon, target);
-      setSelectedId(id);
+      addWallet(wName.trim(), wIcon, money);
     }
     setSheet(false);
   };
 
-  const confirmDelete = (g: Goal) => {
-    if (goals.length <= 1) {
-      Alert.alert(t("Can't delete"), t("You need at least one goal."));
+  const confirmDelete = (w: Wallet) => {
+    if (wallets.length <= 1) {
+      Alert.alert(t("Can't delete"), t("You need at least one wallet."));
       return;
     }
     Alert.alert(
-      t('Delete "{name}"?', { name: g.name }),
-      t("Entries stay in History."),
+      t('Delete "{name}"?', { name: w.name }),
+      t("Its entries will be moved to another wallet."),
       [
         { text: t("Cancel"), style: "cancel" },
-        { text: t("Delete"), style: "destructive", onPress: () => deleteGoal(g.id) },
-      ]
+        {
+          text: t("Delete"),
+          style: "destructive",
+          onPress: () => deleteWallet(w.id),
+        },
+      ],
     );
   };
 
   return (
     <Screen>
-      <SectionHeader title={t("Goals")} actionLabel={t("New")} onAction={openNew} />
+      {/* Total */}
+      <Card>
+        <T kind="label">{t("Total money")}</T>
+        <T kind="big" color={total < 0 ? colors.red : undefined}>
+          {peso(total)}
+        </T>
+        <T kind="muted" style={{ marginTop: 4 }}>
+          {localizeMonth(monthLabel)}
+        </T>
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
+          <View style={{ flex: 1 }}>
+            <T kind="label">{t("In")}</T>
+            <T color={colors.green} style={{ fontSize: 20, fontWeight: "800" }}>
+              {peso(monthSaved)}
+            </T>
+          </View>
+          <View style={{ flex: 1 }}>
+            <T kind="label">{t("Out")}</T>
+            <T color={colors.red} style={{ fontSize: 20, fontWeight: "800" }}>
+              {peso(monthSpent)}
+            </T>
+          </View>
+        </View>
+      </Card>
 
-      {goals.map((g) => {
-        const done = goalSaved(g.id);
-        const pct = g.target > 0 ? Math.min(done / g.target, 1) : 0;
-        const isSel = selected.id === g.id;
+      {/* Wallets */}
+      <SectionHeader
+        title={t("Wallets")}
+        actionLabel={t("New")}
+        onAction={openNew}
+      />
+      {wallets.map((w) => {
+        const bal = walletBalance(w.id);
+        const isSel = selected.id === w.id;
         return (
-          <Pressable key={g.id} onPress={() => setSelectedId(g.id)}>
+          <Pressable key={w.id} onPress={() => setSelectedId(w.id)}>
             <Card
               style={{
                 borderWidth: 2,
                 borderColor: isSel ? colors.green : colors.border,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <IconCircle name={iconOf(g, "flag")} size={42} />
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+              >
+                <IconCircle name={iconOf(w, "wallet")} size={42} />
                 <View style={{ flex: 1 }}>
                   <T kind="title" numberOfLines={1}>
-                    {g.name}
+                    {w.name}
                   </T>
-                  <T kind="muted">
-                    {peso(done)} / {peso(g.target)}
+                  <T
+                    color={bal < 0 ? colors.red : undefined}
+                    style={{ fontSize: 22, fontWeight: "800" }}
+                  >
+                    {peso(bal)}
                   </T>
                 </View>
                 {isSel ? (
-                  <Ionicons name="checkmark-circle" size={22} color={colors.green} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={22}
+                    color={colors.green}
+                  />
                 ) : null}
-                <Pressable onPress={() => openEdit(g)} hitSlop={10}>
-                  <Ionicons name="create-outline" size={20} color={colors.subtext} />
+                <Pressable onPress={() => openEdit(w)} hitSlop={10}>
+                  <Ionicons
+                    name="create-outline"
+                    size={20}
+                    color={colors.subtext}
+                  />
                 </Pressable>
-                <Pressable onPress={() => confirmDelete(g)} hitSlop={10}>
-                  <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+                <Pressable onPress={() => confirmDelete(w)} hitSlop={10}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color={colors.subtext}
+                  />
                 </Pressable>
               </View>
-              <Progress value={pct} color={colors.green} />
             </Card>
           </Pressable>
         );
       })}
 
-      {/* Add ipon */}
+      {/* Add money */}
       <Card>
-        <T kind="title">{t("Add to {name}", { name: selected.name })}</T>
-        <WalletPicker value={activeWallet} onChange={setWalletId} />
+        <T kind="title">{t("Add money to {name}", { name: selected.name })}</T>
+        <Chips>
+          {INCOME_SOURCES.map((s) => (
+            <Chip
+              key={s.key}
+              label={t(s.label)}
+              icon={safeIcon(s.icon, "cash")}
+              active={source === s.key}
+              onPress={() => setSource(s.key)}
+            />
+          ))}
+        </Chips>
         <Field
           placeholder={t("Amount")}
           value={amount}
@@ -162,7 +223,7 @@ export default function Ipon() {
           value={note}
           onChangeText={setNote}
         />
-        <Button label={t("Add ipon")} icon="add-circle" onPress={handleAdd} />
+        <Button label={t("Add money")} icon="add-circle" onPress={handleAdd} />
       </Card>
 
       {/* Recent */}
@@ -170,15 +231,15 @@ export default function Ipon() {
         <T kind="label">{t("Recent")}</T>
         {recent.length === 0 ? (
           <T kind="muted" style={{ marginTop: 8 }}>
-            {t("No ipon yet. Add your first one!")}
+            {t("No money added yet.")}
           </T>
         ) : (
           recent.map((e) => (
             <Row
               key={e.id}
-              icon={entryIcon(e, goals)}
+              icon={moneyIcon(e)}
               tone={colors.green}
-              title={entryTitle(e, goals, t)}
+              title={moneyTitle(e, t)}
               sub={fdate(e.date)}
               amount={`+${peso(e.amount)}`}
             />
@@ -186,25 +247,25 @@ export default function Ipon() {
         )}
       </Card>
 
-      {/* Goal sheet */}
+      {/* Wallet sheet */}
       <Sheet
         visible={sheet}
-        title={editingId ? t("Edit goal") : t("New goal")}
+        title={editingId ? t("Edit wallet") : t("New wallet")}
         onClose={() => setSheet(false)}
-        onSave={saveGoal}
+        onSave={saveWallet}
       >
         <Field
-          placeholder={t("Goal name (e.g. Laptop)")}
-          value={gName}
-          onChangeText={setGName}
+          placeholder={t("Name (e.g. Maya, Bank)")}
+          value={wName}
+          onChangeText={setWName}
         />
         <Field
-          placeholder={t("Target amount (₱)")}
-          value={gTarget}
-          onChangeText={setGTarget}
+          placeholder={t("Money now (₱)")}
+          value={wMoney}
+          onChangeText={setWMoney}
           keyboardType="numeric"
         />
-        <IconPicker value={gIcon} options={GOAL_ICONS} onChange={setGIcon} />
+        <IconPicker value={wIcon} options={WALLET_ICONS} onChange={setWIcon} />
       </Sheet>
     </Screen>
   );

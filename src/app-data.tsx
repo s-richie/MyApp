@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 
+// "ipon" means money coming in (income). The name is kept so saved data still works.
 export type Kind = "ipon" | "gastos";
 
 export type Entry = {
@@ -15,12 +16,13 @@ export type Entry = {
   amount: number;
   note: string;
   date: string; // ISO date string
-  category?: string; // only for gastos
-  goalId?: string; // only for ipon
+  category?: string; // gastos: category key. income: source key.
+  goalId?: string; // old data only
   walletId?: string;
+  recurringId?: string; // set when a recurring rule created this entry
 };
 
-// "icon" is an Ionicons name. "emoji" is only read from old saved data.
+// Goals are hidden in the app now. They are kept so old saved data and backups still work.
 export type Goal = {
   id: string;
   name: string;
@@ -64,7 +66,7 @@ export type Recurring = {
   kind: Kind;
   amount: number;
   note: string;
-  tag?: string; // category key (gastos) or goal id (ipon)
+  tag?: string; // category key (gastos) or income source key
   walletId: string;
   frequency: Frequency;
   day: number; // weekly: 0-6 (Sun-Sat), monthly: 1-31
@@ -112,6 +114,19 @@ export const CATEGORIES = [
 export const categoryOf = (key?: string) =>
   CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[CATEGORIES.length - 1];
 
+// Where money comes from
+export const INCOME_SOURCES = [
+  { key: "allowance", label: "Allowance", icon: "wallet" },
+  { key: "salary", label: "Salary", icon: "briefcase" },
+  { key: "gift", label: "Gift", icon: "gift" },
+  { key: "sales", label: "Sales", icon: "pricetag" },
+  { key: "other", label: "Other", icon: "cash" },
+];
+
+export const incomeSourceOf = (key?: string) =>
+  INCOME_SOURCES.find((s) => s.key === key) ??
+  INCOME_SOURCES[INCOME_SOURCES.length - 1];
+
 type EntryPatch = Partial<
   Pick<Entry, "amount" | "note" | "category" | "walletId">
 >;
@@ -120,7 +135,7 @@ type WalletPatch = Partial<Pick<Wallet, "name" | "icon" | "emoji" | "start">>;
 
 type DataContextType = {
   entries: Entry[];
-  // 4th param "tag": category key for gastos, goal id for ipon
+  // 4th param "tag": category key (gastos) or income source key
   addEntry: (
     kind: Kind,
     amount: number,
@@ -140,6 +155,8 @@ type DataContextType = {
   updateWallet: (id: string, patch: WalletPatch) => void;
   deleteWallet: (id: string) => void;
   walletBalance: (walletId: string) => number;
+  // Type the money you really have now; the starting balance is adjusted for you
+  setWalletBalance: (walletId: string, balance: number) => void;
   debts: Debt[];
   addDebt: (item: NewDebt) => void;
   addDebts: (items: NewDebt[]) => void;
@@ -152,9 +169,9 @@ type DataContextType = {
   budget: string;
   setBudget: (value: string) => void;
   replaceAll: (s: Partial<Snapshot>) => void;
-  saved: number; // all-time ipon
+  saved: number; // all-time income
   monthEntries: Entry[];
-  monthSaved: number;
+  monthSaved: number; // income this month
   monthSpent: number;
   monthLabel: string;
   isCurrentMonth: boolean;
@@ -222,12 +239,30 @@ function entryFrom(r: Recurring, when: Date): Entry {
     note: r.note,
     date: when.toISOString(),
     walletId: r.walletId,
-    ...(r.kind === "gastos"
-      ? { category: r.tag ?? "other" }
-      : r.tag
-        ? { goalId: r.tag }
-        : {}),
+    recurringId: r.id,
+    category: r.tag ?? "other",
   };
+}
+
+// Entries made before they were linked to their rule: they match the rule
+// and are dated at exactly 12:00 (local time), which is how rules date them.
+function matchesOldRecurring(e: Entry, r: Recurring) {
+  if (e.recurringId) return false;
+  const d = new Date(e.date);
+  if (
+    d.getHours() !== 12 ||
+    d.getMinutes() !== 0 ||
+    d.getSeconds() !== 0 ||
+    d.getMilliseconds() !== 0
+  ) {
+    return false;
+  }
+  if (e.kind !== r.kind || e.amount !== r.amount || e.note !== r.note)
+    return false;
+  if ((e.walletId ?? DEFAULT_WALLET_ID) !== r.walletId) return false;
+  return r.kind === "gastos"
+    ? (e.category ?? "other") === (r.tag ?? "other")
+    : (e.goalId ?? DEFAULT_GOAL_ID) === (r.tag ?? DEFAULT_GOAL_ID);
 }
 
 // Creates every entry that is due up to the end of today
@@ -346,11 +381,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       note,
       date: new Date().toISOString(),
       walletId: walletId ?? wallets[0]?.id ?? DEFAULT_WALLET_ID,
-      ...(kind === "gastos"
-        ? { category: tag ?? "other" }
-        : tag
-          ? { goalId: tag }
-          : {}),
+      category: tag ?? "other",
     };
     setEntries((prev) => [entry, ...prev]);
     setSelectedMonth(currentMonth);
@@ -419,6 +450,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return entries
       .filter((e) => (e.walletId ?? DEFAULT_WALLET_ID) === walletId)
       .reduce((a, e) => a + (e.kind === "ipon" ? e.amount : -e.amount), start);
+  };
+
+  const setWalletBalance = (walletId: string, balance: number) => {
+    const w = wallets.find((x) => x.id === walletId);
+    if (!w) return;
+    const diff = balance - walletBalance(walletId);
+    updateWallet(walletId, { start: w.start + diff });
   };
 
   // ---- Utang ----
@@ -493,8 +531,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (created.length) setEntries((prev) => [...created, ...prev]);
   };
 
+  // Deleting a rule also deletes the entries it created
   const deleteRecurring = (id: string) => {
+    const rule = recurring.find((r) => r.id === id);
     setRecurring((prev) => prev.filter((r) => r.id !== id));
+    setEntries((prev) =>
+      prev.filter(
+        (e) =>
+          !(e.recurringId === id || (rule && matchesOldRecurring(e, rule))),
+      ),
+    );
   };
 
   // ---- Cloud restore: replace everything with a saved copy ----
@@ -549,6 +595,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updateWallet,
         deleteWallet,
         walletBalance,
+        setWalletBalance,
         debts,
         addDebt,
         addDebts,
