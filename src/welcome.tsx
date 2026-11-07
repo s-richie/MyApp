@@ -22,8 +22,8 @@ const FEATURES: { icon: IconName; tone: string; title: string; sub: string }[] =
     {
       icon: "wallet",
       tone: "#16a34a",
-      title: "Save money",
-      sub: "Add ipon to your goals",
+      title: "Track your money",
+      sub: "Add the money you have",
     },
     {
       icon: "receipt",
@@ -32,10 +32,10 @@ const FEATURES: { icon: IconName; tone: string; title: string; sub: string }[] =
       sub: "Log your gastos",
     },
     {
-      icon: "trophy",
+      icon: "people",
       tone: "#f59e0b",
-      title: "Reach goals",
-      sub: "See your progress",
+      title: "Utang & Ambagan",
+      sub: "Who owes who",
     },
   ];
 

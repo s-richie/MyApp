@@ -35,9 +35,9 @@ const ITEMS: {
   },
   {
     key: "bot",
-    icon: "happy",
-    title: "MoneyMate",
-    desc: "Streaks and challenges",
+    icon: "flame",
+    title: "Streaks",
+    desc: "Badges and challenges",
     file: "src/app/bot.tsx",
   },
   {

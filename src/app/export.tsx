@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Alert, Share } from "react-native";
 import {
   categoryOf,
-  DEFAULT_GOAL_ID,
   DEFAULT_WALLET_ID,
+  incomeSourceOf,
   useData,
 } from "../app-data";
 import { useI18n } from "../i18n";
@@ -29,7 +29,6 @@ export default function ExportScreen() {
     monthSaved,
     monthSpent,
     budget,
-    goals,
     wallets,
   } = useData();
   const [range, setRange] = useState<Range>("month");
@@ -44,18 +43,17 @@ export default function ExportScreen() {
       "Date",
       "Type",
       "Amount",
-      "Category / Goal",
+      "Category / Source",
       "Wallet",
       "Note",
     ];
     const rows = list.map((e) => [
       ymd(e.date),
-      e.kind === "ipon" ? "Ipon" : "Gastos",
+      e.kind === "ipon" ? "Income" : "Gastos",
       e.amount,
       e.kind === "gastos"
         ? categoryOf(e.category).label
-        : (goals.find((g) => g.id === (e.goalId ?? DEFAULT_GOAL_ID))?.name ??
-          "Ipon"),
+        : incomeSourceOf(e.category).label,
       wallets.find((w) => w.id === (e.walletId ?? DEFAULT_WALLET_ID))?.name ??
         "",
       e.note,
@@ -68,7 +66,7 @@ export default function ExportScreen() {
     const lines = [
       t("MoneyMate — {month}", { month: localizeMonth(monthLabel) }),
       "",
-      t("Saved: ₱{n}", { n: monthSaved.toLocaleString() }),
+      t("Income: ₱{n}", { n: monthSaved.toLocaleString() }),
       t("Spent: ₱{n}", { n: monthSpent.toLocaleString() }),
     ];
     if (budgetNum > 0) {
