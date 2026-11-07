@@ -123,7 +123,7 @@ export function LockProvider({ children }: { children: ReactNode }) {
     authenticating.current = true;
     try {
       const res = await LocalAuthentication.authenticateAsync({
-        promptMessage: t("Unlock Ipon Bot"),
+        promptMessage: t("Unlock MoneyMate"),
         cancelLabel: t("Use PIN"),
         disableDeviceFallback: true,
       });
@@ -276,7 +276,7 @@ function LockScreen({
             marginBottom: 4,
           }}
         >
-          Ipon Bot
+          MoneyMate
         </Text>
         <Text
           maxFontSizeMultiplier={1.2}

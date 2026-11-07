@@ -150,7 +150,7 @@ export function Welcome() {
             marginTop: 2,
           }}
         >
-          Ipon Bot
+          MoneyMate
         </Text>
         <Text
           maxFontSizeMultiplier={1.2}

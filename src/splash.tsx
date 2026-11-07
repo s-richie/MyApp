@@ -193,7 +193,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
               letterSpacing: 0.5,
             }}
           >
-            Ipon Bot
+            MoneyMate
           </Text>
         </Animated.View>
 

@@ -128,7 +128,7 @@ export default function RemindersScreen() {
   const schedule = (hour: number, minute: number) =>
     Notifications.scheduleNotificationAsync({
       content: {
-        title: "Ipon Bot",
+        title: "MoneyMate",
         body: t("Did you save today? Log your ipon and gastos."),
         vibrate: VIBRATION,
       },

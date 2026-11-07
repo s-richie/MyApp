@@ -8,7 +8,7 @@ const fil: Record<string, string> = {
   "Theme, language, security": "Tema, wika, seguridad",
 
   // Welcome
-  "Welcome to Ipon Bot": "Welcome sa Ipon Bot",
+  "Welcome to MoneyMate": "Welcome sa MoneyMate",
   "Add ipon to your goals": "Mag-add ng ipon sa mga goal mo",
   "Log your gastos": "I-log ang mga gastos mo",
   "See your progress": "Tingnan ang progress mo",
@@ -16,29 +16,32 @@ const fil: Record<string, string> = {
 
   // Dashboard
   "Start here": "Simulan dito",
-  "Balance": "Balanse",
-  "Saved": "Naipon",
-  "Spent": "Nagastos",
+  Balance: "Balanse",
+  Saved: "Naipon",
+  Spent: "Nagastos",
   "Over by {n}": "Lampas ng {n}",
   "{p}% used": "{p}% ang nagamit",
   "{a} per day": "{a} bawat araw",
-  "Goals": "Mga goal",
+  Goals: "Mga goal",
   "Where it went": "Saan napunta",
 
   // Robot tips
   "Over budget by ₱{n}. Slow down on spending.":
     "Lampas ka na ng ₱{n} sa budget. Bawasan muna ang gastos.",
-  "{p}% of your budget is used. Careful!": "{p}% na ng budget ang nagamit. Ingat!",
-  "{p}% of your budget used. Nice pace!": "{p}% pa lang ng budget ang nagamit. Ayos!",
+  "{p}% of your budget is used. Careful!":
+    "{p}% na ng budget ang nagamit. Ingat!",
+  "{p}% of your budget used. Nice pace!":
+    "{p}% pa lang ng budget ang nagamit. Ayos!",
   "{name} goal reached. Congrats!": "Naabot mo na ang {name}. Congrats!",
   "₱{n} to go for {name}!": "₱{n} na lang para sa {name}!",
   "{n}-day ipon streak. Keep going!": "{n} araw na ipon streak. Ituloy mo!",
   "Save today to keep your {n}-day streak.":
     "Mag-ipon ngayon para hindi maputol ang {n}-araw na streak.",
-  "No ipon yet today. Even ₱10 counts.": "Wala pang ipon ngayon. Kahit ₱10, counted.",
+  "No ipon yet today. Even ₱10 counts.":
+    "Wala pang ipon ngayon. Kahit ₱10, counted.",
   "{p}% of spending goes to {cat}.": "{p}% ng gastos mo ay sa {cat}.",
-  "Hi, I'm Ipon Bot! Add an ipon to start.":
-    "Hi, ako si Ipon Bot! Mag-add ng ipon para magsimula.",
+  "Hi, I'm MoneyMate! Add an ipon to start.":
+    "Hi, ako si MoneyMate! Mag-add ng ipon para magsimula.",
   "Tip: save first, spend what's left.": "Tip: mag-ipon muna, saka gumastos.",
 };
 

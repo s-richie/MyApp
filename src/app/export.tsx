@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { Share, Alert } from "react-native";
-import { useI18n } from "../i18n";
+import { Alert, Share } from "react-native";
 import {
-  useData,
   categoryOf,
   DEFAULT_GOAL_ID,
   DEFAULT_WALLET_ID,
+  useData,
 } from "../app-data";
+import { useI18n } from "../i18n";
 import { MonthPicker } from "../month-picker";
-import { Screen, Card, T, Button, Chip, Chips } from "../ui";
+import { Button, Card, Chip, Chips, Screen, T } from "../ui";
 
 type Range = "month" | "all";
 
@@ -40,15 +40,24 @@ export default function ExportScreen() {
 
   // CSV keeps English column names so it works the same in any spreadsheet
   const buildCsv = () => {
-    const header = ["Date", "Type", "Amount", "Category / Goal", "Wallet", "Note"];
+    const header = [
+      "Date",
+      "Type",
+      "Amount",
+      "Category / Goal",
+      "Wallet",
+      "Note",
+    ];
     const rows = list.map((e) => [
       ymd(e.date),
       e.kind === "ipon" ? "Ipon" : "Gastos",
       e.amount,
       e.kind === "gastos"
         ? categoryOf(e.category).label
-        : goals.find((g) => g.id === (e.goalId ?? DEFAULT_GOAL_ID))?.name ?? "Ipon",
-      wallets.find((w) => w.id === (e.walletId ?? DEFAULT_WALLET_ID))?.name ?? "",
+        : (goals.find((g) => g.id === (e.goalId ?? DEFAULT_GOAL_ID))?.name ??
+          "Ipon"),
+      wallets.find((w) => w.id === (e.walletId ?? DEFAULT_WALLET_ID))?.name ??
+        "",
       e.note,
     ]);
     return [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
@@ -57,7 +66,7 @@ export default function ExportScreen() {
   const buildSummary = () => {
     const budgetNum = Number(budget) || 0;
     const lines = [
-      t("Ipon Bot — {month}", { month: localizeMonth(monthLabel) }),
+      t("MoneyMate — {month}", { month: localizeMonth(monthLabel) }),
       "",
       t("Saved: ₱{n}", { n: monthSaved.toLocaleString() }),
       t("Spent: ₱{n}", { n: monthSpent.toLocaleString() }),
@@ -67,7 +76,7 @@ export default function ExportScreen() {
         t("Budget left: ₱{a} of ₱{b}", {
           a: (budgetNum - monthSpent).toLocaleString(),
           b: budgetNum.toLocaleString(),
-        })
+        }),
       );
     }
 
@@ -98,10 +107,13 @@ export default function ExportScreen() {
 
   const shareCsv = () => {
     if (list.length === 0) {
-      Alert.alert(t("Nothing to export"), t("There are no entries in this range."));
+      Alert.alert(
+        t("Nothing to export"),
+        t("There are no entries in this range."),
+      );
       return;
     }
-    share(buildCsv(), "Ipon Bot entries (CSV)");
+    share(buildCsv(), "MoneyMate entries (CSV)");
   };
 
   return (
@@ -114,7 +126,7 @@ export default function ExportScreen() {
         <Button
           label={t("Share summary")}
           icon="share-social"
-          onPress={() => share(buildSummary(), "Ipon Bot summary")}
+          onPress={() => share(buildSummary(), "MoneyMate summary")}
         />
       </Card>
 
@@ -136,10 +148,14 @@ export default function ExportScreen() {
             list.length === 1
               ? "{n} entry will be exported."
               : "{n} entries will be exported.",
-            { n: list.length }
+            { n: list.length },
           )}
         </T>
-        <Button label={t("Share CSV")} icon="document-text" onPress={shareCsv} />
+        <Button
+          label={t("Share CSV")}
+          icon="document-text"
+          onPress={shareCsv}
+        />
       </Card>
     </Screen>
   );

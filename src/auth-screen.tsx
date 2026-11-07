@@ -242,7 +242,7 @@ export function AuthScreen({
           maxFontSizeMultiplier={1.2}
           style={{ color: "#fff", fontSize: 26, fontWeight: "800" }}
         >
-          Ipon Bot
+          MoneyMate
         </Text>
       </View>
 

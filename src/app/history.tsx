@@ -1,44 +1,42 @@
-import { useState } from "react";
-import { View, Pressable, FlatList, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Alert, FlatList, Pressable, View } from "react-native";
+import {
+  CATEGORIES,
+  DEFAULT_WALLET_ID,
+  Entry,
+  INCOME_SOURCES,
+  Kind,
+  useData,
+} from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import {
-  useData,
-  Kind,
-  Entry,
-  CATEGORIES,
-  categoryOf,
-  DEFAULT_GOAL_ID,
-  DEFAULT_WALLET_ID,
-} from "../app-data";
+import { moneyIcon, moneyLabel, moneyTitle } from "../money";
 import { MonthPicker } from "../month-picker";
-import { WalletPicker } from "../wallet-picker";
 import {
-  Row,
-  Field,
   Chip,
   Chips,
-  Sheet,
   EmptyState,
-  entryIcon,
-  entryTitle,
-  safeIcon,
+  Field,
   peso,
+  Row,
+  safeIcon,
+  Sheet,
 } from "../ui";
+import { WalletPicker } from "../wallet-picker";
 
 type Filter = "all" | Kind;
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "ipon", label: "Ipon" },
+  { key: "ipon", label: "Income" },
   { key: "gastos", label: "Gastos" },
 ];
 
 export default function History() {
   const { colors } = useTheme();
   const { t, fdate } = useI18n();
-  const { monthEntries, deleteEntry, updateEntry, goals, wallets } = useData();
+  const { monthEntries, deleteEntry, updateEntry, wallets } = useData();
 
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
@@ -50,20 +48,15 @@ export default function History() {
   const [editCategory, setEditCategory] = useState("other");
   const [editWallet, setEditWallet] = useState("");
 
-  const goalOf = (e: Entry) =>
-    goals.find((g) => g.id === (e.goalId ?? DEFAULT_GOAL_ID));
-
   const walletOf = (e: Entry) =>
-    wallets.find((w) => w.id === (e.walletId ?? DEFAULT_WALLET_ID)) ?? wallets[0];
-
-  const labelOf = (e: Entry) =>
-    e.kind === "gastos" ? t(categoryOf(e.category).label) : goalOf(e)?.name ?? "Ipon";
+    wallets.find((w) => w.id === (e.walletId ?? DEFAULT_WALLET_ID)) ??
+    wallets[0];
 
   const q = search.trim().toLowerCase();
   const shown = monthEntries.filter((e) => {
     if (filter !== "all" && e.kind !== filter) return false;
     if (!q) return true;
-    return `${e.note} ${labelOf(e)} ${walletOf(e)?.name ?? ""} ${e.amount}`
+    return `${e.note} ${moneyLabel(e, t)} ${walletOf(e)?.name ?? ""} ${e.amount}`
       .toLowerCase()
       .includes(q);
   });
@@ -71,7 +64,11 @@ export default function History() {
   const confirmDelete = (id: string) => {
     Alert.alert(t("Delete entry?"), t("This can't be undone."), [
       { text: t("Cancel"), style: "cancel" },
-      { text: t("Delete"), style: "destructive", onPress: () => deleteEntry(id) },
+      {
+        text: t("Delete"),
+        style: "destructive",
+        onPress: () => deleteEntry(id),
+      },
     ]);
   };
 
@@ -91,16 +88,23 @@ export default function History() {
       amount: value,
       note: editNote,
       walletId: editWallet,
-      ...(editing.kind === "gastos" ? { category: editCategory } : {}),
+      category: editCategory,
     });
     setEditing(null);
   };
+
+  const isIncomeEdit = editing?.kind === "ipon";
+  const options = isIncomeEdit ? INCOME_SOURCES : CATEGORIES;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
       <MonthPicker />
 
-      <Field placeholder={t("Search")} value={search} onChangeText={setSearch} />
+      <Field
+        placeholder={t("Search")}
+        value={search}
+        onChangeText={setSearch}
+      />
 
       <Chips>
         {FILTERS.map((f) => (
@@ -124,19 +128,23 @@ export default function History() {
           />
         }
         renderItem={({ item }) => {
-          const isIpon = item.kind === "ipon";
+          const isIn = item.kind === "ipon";
           const w = walletOf(item);
           return (
             <Row
-              icon={entryIcon(item, goals)}
-              tone={isIpon ? colors.green : colors.red}
-              title={entryTitle(item, goals, t)}
-              sub={`${labelOf(item)} • ${w?.name ?? ""} • ${fdate(item.date, true)}`}
-              amount={`${isIpon ? "+" : "-"}${peso(item.amount)}`}
+              icon={moneyIcon(item)}
+              tone={isIn ? colors.green : colors.red}
+              title={moneyTitle(item, t)}
+              sub={`${moneyLabel(item, t)} • ${w?.name ?? ""} • ${fdate(item.date, true)}`}
+              amount={`${isIn ? "+" : "-"}${peso(item.amount)}`}
               onPress={() => openEdit(item)}
               trailing={
                 <Pressable onPress={() => confirmDelete(item.id)} hitSlop={10}>
-                  <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color={colors.subtext}
+                  />
                 </Pressable>
               }
             />
@@ -147,7 +155,7 @@ export default function History() {
       {/* Edit sheet */}
       <Sheet
         visible={editing !== null}
-        title={editing?.kind === "ipon" ? t("Edit ipon") : t("Edit expense")}
+        title={isIncomeEdit ? t("Edit income") : t("Edit expense")}
         onClose={() => setEditing(null)}
         onSave={saveEdit}
       >
@@ -163,20 +171,18 @@ export default function History() {
           onChangeText={setEditNote}
         />
 
-        {editing?.kind === "gastos" && (
-          <Chips>
-            {CATEGORIES.map((c) => (
-              <Chip
-                key={c.key}
-                label={t(c.label)}
-                icon={safeIcon(c.icon, "apps")}
-                active={editCategory === c.key}
-                color={colors.blue}
-                onPress={() => setEditCategory(c.key)}
-              />
-            ))}
-          </Chips>
-        )}
+        <Chips>
+          {options.map((c) => (
+            <Chip
+              key={c.key}
+              label={t(c.label)}
+              icon={safeIcon(c.icon, "apps")}
+              active={editCategory === c.key}
+              color={isIncomeEdit ? colors.green : colors.blue}
+              onPress={() => setEditCategory(c.key)}
+            />
+          ))}
+        </Chips>
 
         <WalletPicker value={editWallet} onChange={setEditWallet} />
       </Sheet>

@@ -1,11 +1,12 @@
 const fil: Record<string, string> = {
   // Shared
-  "Amount": "Halaga",
+  Amount: "Halaga",
   "Amount (₱)": "Halaga (₱)",
   "Note (optional)": "Tala (opsyonal)",
-  "Recent": "Kamakailan",
-  "See everything in the History tab.": "Tingnan ang lahat sa tab na Kasaysayan.",
-  "Category": "Kategorya",
+  Recent: "Kamakailan",
+  "See everything in the History tab.":
+    "Tingnan ang lahat sa tab na Kasaysayan.",
+  Category: "Kategorya",
 
   // Ipon screen
   "My goals": "Mga goal ko",
@@ -24,13 +25,14 @@ const fil: Record<string, string> = {
 
   // Budget screen
   "Monthly budget (₱)": "Buwanang budget (₱)",
-  "Remaining": "Natitira",
+  Remaining: "Natitira",
   "Spent: ₱{n}": "Nagastos: ₱{n}",
   "Add gastos": "Magdagdag ng gastos",
 
   // History screen
-  "Search note, category, wallet or amount": "Maghanap ng tala, kategorya, wallet o halaga",
-  "All": "Lahat",
+  "Search note, category, wallet or amount":
+    "Maghanap ng tala, kategorya, wallet o halaga",
+  All: "Lahat",
   "Tap an entry to edit it.": "I-tap ang entry para i-edit.",
   "No matches found.": "Walang nahanap.",
   "Nothing here yet.": "Wala pa dito.",
@@ -43,7 +45,7 @@ const fil: Record<string, string> = {
   "They owe me": "Utang nila sa akin",
   "I owe": "Utang ko",
   "Owed to me": "Utang sa akin",
-  "New": "Bago",
+  New: "Bago",
   "Nobody owes you anything. 🎉": "Walang may utang sa iyo. 🎉",
   "You don't owe anyone. 🙌": "Wala kang utang kanino man. 🙌",
   "Paid ✅": "Bayad na ✅",
@@ -86,17 +88,18 @@ const fil: Record<string, string> = {
     "Nagdagdag ng {n} utang na {amt} bawat isa at ang parte mo na {share} bilang gastos.",
   "Who paid?": "Sino ang nagbayad?",
   "Enter the name of the person who paid.": "Ilagay ang pangalan ng nagbayad.",
-  "Added {amt} to what you owe {name}.": "Nadagdag ang {amt} sa utang mo kay {name}.",
+  "Added {amt} to what you owe {name}.":
+    "Nadagdag ang {amt} sa utang mo kay {name}.",
 
   // PIN lock
   "Too many tries. Wait {s}s": "Napakaraming subok. Maghintay ng {s}s",
   "Wrong PIN. Try again.": "Maling PIN. Subukan ulit.",
   "Enter your PIN": "Ilagay ang PIN mo",
-  "Unlock Ipon Bot": "I-unlock ang Ipon Bot",
+  "Unlock MoneyMate": "I-unlock ang MoneyMate",
   "Use PIN": "Gamitin ang PIN",
 
   // Security card
-  "Security": "Seguridad",
+  Security: "Seguridad",
   "PIN lock": "PIN lock",
   "Asks for your PIN when you open the app and after 30 seconds away.":
     "Hihingin ang PIN mo kapag binuksan ang app at pagkatapos ng 30 segundong pagkawala.",

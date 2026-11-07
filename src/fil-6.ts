@@ -6,7 +6,7 @@ const fil: Record<string, string> = {
   // Recurring
   "Added automatically when due.": "Awtomatikong idinadagdag kapag due na.",
 
-  // Ipon Bot
+  // Streaks and challenges (updated in Part 2)
   "Saved today": "Nakapag-ipon ngayon",
   Done: "Tapos na",
   "Save ₱20 or more on 30 days.": "Mag-ipon ng ₱20 o higit sa 30 araw.",
@@ -69,6 +69,31 @@ const fil: Record<string, string> = {
     "Buburahin nito ang account at cloud backup mo. Mananatili ang data sa phone na ito.",
   "Could not delete the account": "Hindi nabura ang account",
   "Account deleted": "Nabura ang account",
+
+  // My Money
+  "My Money": "Pera Ko",
+  "Total money": "Kabuuang pera",
+  In: "Pumasok",
+  Out: "Lumabas",
+  Income: "Kita",
+  "Add money": "Magdagdag ng pera",
+  "Add money to {name}": "Magdagdag ng pera sa {name}",
+  "Money now (₱)": "Pera ngayon (₱)",
+  "No money added yet.": "Wala pang naidagdag na pera.",
+  "Edit income": "I-edit ang kita",
+  Allowance: "Allowance",
+  Salary: "Sweldo",
+  Gift: "Regalo",
+  Sales: "Benta",
+
+  // Robot tips
+  "{n}-day streak. Keep going!": "{n} araw na streak. Ituloy mo!",
+  "Log something today to keep your {n}-day streak.":
+    "Mag-log ngayon para hindi maputol ang {n}-araw na streak.",
+  "Nothing logged yet today.": "Wala ka pang na-log ngayon.",
+  "Hi, I'm MoneyMate! Add your money to start.":
+    "Hi, ako si MoneyMate! Idagdag ang pera mo para magsimula.",
+  "Tip: log your gastos every day.": "Tip: i-log ang gastos mo araw-araw.",
 };
 
 export default fil;

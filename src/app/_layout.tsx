@@ -84,7 +84,7 @@ function TabsLayout() {
           name="index"
           options={{
             title: "Home",
-            headerTitle: () => <HeaderTitle title="Ipon Bot" />,
+            headerTitle: () => <HeaderTitle title="MoneyMate" />,
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="home" size={size} color={color} />
             ),
