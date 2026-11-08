@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { View, Text, Animated, Easing } from "react-native";
+import { Animated, Easing, Text, View } from "react-native";
 
 const COINS = [
   { left: "9%", top: "16%", size: 34, dy: -14 },
@@ -9,6 +9,63 @@ const COINS = [
   { left: "44%", top: "5%", size: 22, dy: 10 },
   { left: "91%", top: "80%", size: 22, dy: -10 },
 ] as const;
+
+// The gold ₱ coin: the "Money" in MoneyMate
+export function Coin({ size = 40 }: { size?: number }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: "#facc15",
+        borderWidth: Math.max(2, size * 0.05),
+        borderColor: "#ca8a04",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: size * 0.72,
+          height: size * 0.72,
+          borderRadius: size * 0.36,
+          borderWidth: Math.max(1.5, size * 0.03),
+          borderColor: "#ca8a04",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: 0.9,
+        }}
+      >
+        <Text
+          allowFontScaling={false}
+          style={{ color: "#a16207", fontWeight: "800", fontSize: size * 0.42 }}
+        >
+          ₱
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// "Money" in white and "Mate" in gold. Use it on the green backgrounds.
+export function Wordmark({
+  size = 32,
+  color = "#ffffff",
+}: {
+  size?: number;
+  color?: string;
+}) {
+  return (
+    <Text
+      maxFontSizeMultiplier={1.1}
+      style={{ fontSize: size, fontWeight: "800", letterSpacing: 0.5 }}
+    >
+      <Text style={{ color }}>Money</Text>
+      <Text style={{ color: "#facc15" }}>Mate</Text>
+    </Text>
+  );
+}
 
 // Green circles and floating coins. Put it inside a View with overflow: "hidden".
 export function HeroBackdrop() {
@@ -29,7 +86,7 @@ export function HeroBackdrop() {
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     loop.start();
     return () => loop.stop();
@@ -104,7 +161,11 @@ export function HeroBackdrop() {
           }}
         >
           <Text
-            style={{ color: "#a16207", fontWeight: "800", fontSize: c.size * 0.5 }}
+            style={{
+              color: "#a16207",
+              fontWeight: "800",
+              fontSize: c.size * 0.5,
+            }}
           >
             ₱
           </Text>

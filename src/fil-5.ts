@@ -4,9 +4,12 @@ const fil: Record<string, string> = {
   Search: "Maghanap",
   "Start: {n}": "Simula: {n}",
 
-  // Budget not set
+  // Budget
   "No budget set": "Walang budget pa",
   "Set budget": "I-set ang budget",
+  "Set a monthly budget": "Maglagay ng buwanang budget",
+  "Set how much you plan to spend this month.":
+    "Ilagay kung magkano ang balak mong gastusin ngayong buwan.",
 
   // Sync
   "Syncing...": "Nagsi-sync...",
@@ -32,9 +35,11 @@ const fil: Record<string, string> = {
   "Entries it added will also be deleted.":
     "Buburahin din ang mga entry na naidagdag nito.",
 
-  // Welcome screen
+  // Welcome and splash
   "Track your money": "I-track ang pera mo",
   "Add the money you have": "Idagdag ang pera mo",
+  "Track spending": "I-track ang gastos",
+  "Your money buddy": "Kasama mo sa pera",
 
   // Streaks and challenges
   Streaks: "Mga streak",
@@ -49,6 +54,21 @@ const fil: Record<string, string> = {
 
   // Export
   "Income: ₱{n}": "Kita: ₱{n}",
+
+  // Home
+  "What do you want to do?": "Ano ang gusto mong gawin?",
+  "Add expense": "Magdagdag ng gastos",
+  "Allowance, salary, gifts": "Allowance, sweldo, regalo",
+  "Food, fare, bills": "Pagkain, pamasahe, bayarin",
+  "Split a bill": "Hatiin ang bill",
+  "See all": "Tingnan lahat",
+  "Where is it from?": "Saan galing?",
+  "What is it for?": "Para saan ito?",
+
+  // My Money
+  "Add wallet": "Magdagdag ng wallet",
+  "Adding here": "Dito idadagdag",
+  Edit: "I-edit",
 };
 
 export default fil;

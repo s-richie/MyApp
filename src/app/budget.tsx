@@ -1,28 +1,27 @@
 import { useState } from "react";
+import { CATEGORIES, useData } from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import { useData, CATEGORIES } from "../app-data";
+import { moneyIcon, moneyTitle } from "../money";
 import { MonthPicker } from "../month-picker";
-import { WalletPicker } from "../wallet-picker";
 import {
-  Screen,
-  Card,
-  T,
-  Row,
   Button,
-  Field,
+  Card,
   Chip,
   Chips,
-  entryIcon,
-  entryTitle,
-  safeIcon,
+  Field,
   peso,
+  Row,
+  safeIcon,
+  Screen,
+  T,
 } from "../ui";
+import { WalletPicker } from "../wallet-picker";
 
 export default function Budget() {
   const { colors } = useTheme();
   const { t, fdate } = useI18n();
-  const { monthEntries, addEntry, budget, setBudget, monthSpent, wallets, goals } =
+  const { monthEntries, addEntry, budget, setBudget, monthSpent, wallets } =
     useData();
 
   const [amount, setAmount] = useState("");
@@ -30,7 +29,8 @@ export default function Budget() {
   const [category, setCategory] = useState("food");
   const [walletId, setWalletId] = useState("");
 
-  const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
+  const activeWallet =
+    wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
   const budgetNum = Number(budget) || 0;
   const remaining = budgetNum - monthSpent;
   const recent = monthEntries.filter((e) => e.kind === "gastos").slice(0, 3);
@@ -68,7 +68,7 @@ export default function Budget() {
           </>
         ) : (
           <T kind="muted" style={{ marginTop: 8 }}>
-            {t("No budget set")}
+            {t("Set how much you plan to spend this month.")}
           </T>
         )}
         <T kind="muted">
@@ -76,9 +76,9 @@ export default function Budget() {
         </T>
       </Card>
 
-      {/* Add gastos */}
+      {/* Add expense */}
       <Card>
-        <T kind="title">{t("Add gastos")}</T>
+        <T kind="title">{t("Add expense")}</T>
         <Chips>
           {CATEGORIES.map((c) => (
             <Chip
@@ -86,7 +86,7 @@ export default function Budget() {
               label={t(c.label)}
               icon={safeIcon(c.icon, "apps")}
               active={category === c.key}
-              color={colors.blue}
+              color={colors.red}
               onPress={() => setCategory(c.key)}
             />
           ))}
@@ -104,9 +104,9 @@ export default function Budget() {
           onChangeText={setNote}
         />
         <Button
-          label={t("Add gastos")}
+          label={t("Add expense")}
           icon="remove-circle"
-          color={colors.blue}
+          color={colors.red}
           onPress={handleAdd}
         />
       </Card>
@@ -122,9 +122,9 @@ export default function Budget() {
           recent.map((e) => (
             <Row
               key={e.id}
-              icon={entryIcon(e, goals)}
+              icon={moneyIcon(e)}
               tone={colors.red}
-              title={entryTitle(e, goals, t)}
+              title={moneyTitle(e, t)}
               sub={fdate(e.date)}
               amount={`-${peso(e.amount)}`}
             />

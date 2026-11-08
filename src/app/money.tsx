@@ -6,22 +6,22 @@ import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
 import { moneyIcon, moneyTitle } from "../money";
 import {
-  Button,
-  Card,
-  Chip,
-  Chips,
-  Field,
-  IconCircle,
-  iconOf,
-  IconPicker,
-  peso,
-  Row,
-  safeIcon,
-  Screen,
-  SectionHeader,
-  Sheet,
-  T,
-  WALLET_ICONS,
+    Button,
+    Card,
+    Chip,
+    Chips,
+    Field,
+    IconCircle,
+    iconOf,
+    IconPicker,
+    peso,
+    Row,
+    safeIcon,
+    Screen,
+    SectionHeader,
+    Sheet,
+    T,
+    WALLET_ICONS,
 } from "../ui";
 
 export default function MyMoney() {
@@ -142,7 +142,7 @@ export default function MyMoney() {
       {/* Wallets */}
       <SectionHeader
         title={t("Wallets")}
-        actionLabel={t("New")}
+        actionLabel={t("Add wallet")}
         onAction={openNew}
       />
       {wallets.map((w) => {
@@ -164,33 +164,44 @@ export default function MyMoney() {
                   <T kind="title" numberOfLines={1}>
                     {w.name}
                   </T>
-                  <T
-                    color={bal < 0 ? colors.red : undefined}
-                    style={{ fontSize: 22, fontWeight: "800" }}
-                  >
-                    {peso(bal)}
-                  </T>
+                  {isSel ? (
+                    <T kind="muted" color={colors.green}>
+                      {t("Adding here")}
+                    </T>
+                  ) : null}
                 </View>
-                {isSel ? (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={22}
-                    color={colors.green}
-                  />
-                ) : null}
-                <Pressable onPress={() => openEdit(w)} hitSlop={10}>
+                <T
+                  color={bal < 0 ? colors.red : undefined}
+                  style={{ fontSize: 22, fontWeight: "800", flexShrink: 1 }}
+                >
+                  {peso(bal)}
+                </T>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 22, marginTop: 12 }}>
+                <Pressable
+                  onPress={() => openEdit(w)}
+                  hitSlop={8}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
                   <Ionicons
                     name="create-outline"
-                    size={20}
-                    color={colors.subtext}
+                    size={18}
+                    color={colors.blue}
                   />
+                  <T color={colors.blue} style={{ fontWeight: "600" }}>
+                    {t("Edit")}
+                  </T>
                 </Pressable>
-                <Pressable onPress={() => confirmDelete(w)} hitSlop={10}>
-                  <Ionicons
-                    name="trash-outline"
-                    size={20}
-                    color={colors.subtext}
-                  />
+                <Pressable
+                  onPress={() => confirmDelete(w)}
+                  hitSlop={8}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.red} />
+                  <T color={colors.red} style={{ fontWeight: "600" }}>
+                    {t("Delete")}
+                  </T>
                 </Pressable>
               </View>
             </Card>
