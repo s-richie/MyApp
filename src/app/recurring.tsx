@@ -128,7 +128,7 @@ export default function RecurringScreen() {
     <Screen>
       <SectionHeader
         title={t("Recurring")}
-        actionLabel={t("New")}
+        actionLabel={t("Add recurring")}
         onAction={openNew}
       />
       <T kind="muted" style={{ marginBottom: 12 }}>
@@ -194,12 +194,13 @@ export default function RecurringScreen() {
       <Sheet
         visible={open}
         title={t("New recurring entry")}
+        saveLabel={t("Add recurring")}
         onClose={() => setOpen(false)}
         onSave={save}
       >
         <Chips>
           <Chip
-            label="Gastos"
+            label={t("Expense")}
             icon="remove-circle"
             active={kind === "gastos"}
             color={colors.red}

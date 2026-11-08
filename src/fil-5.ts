@@ -11,13 +11,16 @@ const fil: Record<string, string> = {
   "Set how much you plan to spend this month.":
     "Ilagay kung magkano ang balak mong gastusin ngayong buwan.",
 
-  // Sync
-  "Syncing...": "Nagsi-sync...",
-  "Synced at {time}": "Naka-sync noong {time}",
+  // Backup (sync)
+  "Backing up...": "Nagba-back up...",
+  "Backed up at {time}": "Na-back up noong {time}",
   "Waiting for internet": "Naghihintay ng internet",
-  "Sync failed. Tap Sync now.": "Nabigo ang sync. I-tap ang I-sync ngayon.",
-  "Sync paused": "Naka-pause ang sync",
-  "Sync now": "I-sync ngayon",
+  "Backup failed. Tap Back up now.":
+    "Nabigo ang backup. I-tap ang I-back up ngayon.",
+  "Backup paused": "Naka-pause ang backup",
+  "Back up now": "I-back up ngayon",
+  "Not signed in": "Hindi naka-sign in",
+  "Sign in to back up your data": "Mag-sign in para ma-back up ang data mo",
   "Which data do you want to keep?": "Anong data ang gusto mong gamitin?",
   "Cloud: {c} entries. This phone: {l} entries.":
     "Cloud: {c} entry. Phone na ito: {l} entry.",
@@ -25,6 +28,7 @@ const fil: Record<string, string> = {
   "Use cloud data": "Gamitin ang cloud",
   "Use this phone": "Gamitin ang phone na ito",
   "Not now": "Mamaya na",
+  "Skip for now": "Laktawan muna",
 
   // Reminder
   "Daily reminder": "Paalala araw-araw",
@@ -34,6 +38,8 @@ const fil: Record<string, string> = {
   // Recurring
   "Entries it added will also be deleted.":
     "Buburahin din ang mga entry na naidagdag nito.",
+  "Add recurring": "Magdagdag ng paulit-ulit",
+  Expense: "Gastos",
 
   // Welcome and splash
   "Track your money": "I-track ang pera mo",
@@ -69,6 +75,21 @@ const fil: Record<string, string> = {
   "Add wallet": "Magdagdag ng wallet",
   "Adding here": "Dito idadagdag",
   Edit: "I-edit",
+
+  // Utang
+  "Money you lent or borrowed.": "Perang ipinahiram o inutang mo.",
+  "Add utang": "Magdagdag ng utang",
+  "They paid me": "Nagbayad na sila",
+  "I paid them": "Nagbayad na ako",
+  "Save payment": "I-save ang bayad",
+  "Paid in full": "Bayad na lahat",
+
+  // Ambagan
+  "Split a bill with friends.": "Hatiin ang bill kasama ang mga kaibigan.",
+  "I paid the bill": "Ako ang nagbayad ng bill",
+  "A friend paid the bill": "Kaibigan ang nagbayad ng bill",
+  "Save: friends owe me": "I-save: may utang sila sa akin",
+  "Save: I owe them": "I-save: may utang ako sa kanila",
 };
 
 export default fil;

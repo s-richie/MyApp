@@ -1,25 +1,25 @@
-import { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Alert, Pressable, View } from "react-native";
+import { Ambagan } from "../ambagan";
+import { Debt, Direction, useData } from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
-import { useData, Debt, Direction } from "../app-data";
-import { Ambagan } from "../ambagan";
 import {
-  Screen,
-  Card,
-  T,
-  Progress,
-  IconCircle,
   Button,
-  Field,
+  Card,
   Chip,
   Chips,
-  Sheet,
-  SectionHeader,
   EmptyState,
+  Field,
+  IconCircle,
   IconName,
   peso,
+  Progress,
+  Screen,
+  SectionHeader,
+  Sheet,
+  T,
 } from "../ui";
 
 type Tab = "utang" | "ambagan";
@@ -32,12 +32,12 @@ const TABS: { key: Tab; icon: IconName; label: string }[] = [
   { key: "ambagan", icon: "restaurant", label: "Ambagan" },
 ];
 
-export default function Utang() {
+export default function Utang({ initialTab }: { initialTab?: Tab }) {
   const { colors } = useTheme();
   const { t, fdate } = useI18n();
   const { debts, addDebt, recordPayment, deleteDebt } = useData();
 
-  const [tab, setTab] = useState<Tab>("utang");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "utang");
   const [filter, setFilter] = useState<Direction>("owed");
 
   // new utang sheet
@@ -60,7 +60,9 @@ export default function Utang() {
 
   const list = debts
     .filter((d) => d.direction === filter)
-    .sort((a, b) => (remainingOf(a) === 0 ? 1 : 0) - (remainingOf(b) === 0 ? 1 : 0));
+    .sort(
+      (a, b) => (remainingOf(a) === 0 ? 1 : 0) - (remainingOf(b) === 0 ? 1 : 0),
+    );
 
   const openNew = () => {
     setPerson("");
@@ -73,7 +75,12 @@ export default function Utang() {
   const saveNew = () => {
     const value = Number(amount);
     if (!person.trim() || !value || value <= 0) return;
-    addDebt({ person: person.trim(), amount: value, direction, note: note.trim() });
+    addDebt({
+      person: person.trim(),
+      amount: value,
+      direction,
+      note: note.trim(),
+    });
     setFilter(direction);
     setNewOpen(false);
   };
@@ -103,8 +110,12 @@ export default function Utang() {
       t("This can't be undone."),
       [
         { text: t("Cancel"), style: "cancel" },
-        { text: t("Delete"), style: "destructive", onPress: () => deleteDebt(d.id) },
-      ]
+        {
+          text: t("Delete"),
+          style: "destructive",
+          onPress: () => deleteDebt(d.id),
+        },
+      ],
     );
   };
 
@@ -145,7 +156,10 @@ export default function Utang() {
                 size={18}
                 color={active ? "#fff" : colors.subtext}
               />
-              <T color={active ? "#fff" : colors.text} style={{ fontWeight: "700" }}>
+              <T
+                color={active ? "#fff" : colors.text}
+                style={{ fontWeight: "700" }}
+              >
                 {tb.label}
               </T>
             </Pressable>
@@ -157,15 +171,33 @@ export default function Utang() {
         <Ambagan />
       ) : (
         <Screen>
+          <T kind="muted" style={{ marginBottom: 10 }}>
+            {t("Money you lent or borrowed.")}
+          </T>
+
           {/* Totals (tap to switch the list) */}
           <View style={{ flexDirection: "row", gap: 12 }}>
             {(
               [
-                { dir: "owed", label: "They owe me", total: owedTotal, tone: colors.green },
-                { dir: "owe", label: "I owe", total: oweTotal, tone: colors.red },
+                {
+                  dir: "owed",
+                  label: "They owe me",
+                  total: owedTotal,
+                  tone: colors.green,
+                },
+                {
+                  dir: "owe",
+                  label: "I owe",
+                  total: oweTotal,
+                  tone: colors.red,
+                },
               ] as const
             ).map((c) => (
-              <Pressable key={c.dir} style={{ flex: 1 }} onPress={() => setFilter(c.dir)}>
+              <Pressable
+                key={c.dir}
+                style={{ flex: 1 }}
+                onPress={() => setFilter(c.dir)}
+              >
                 <Card
                   style={{
                     borderWidth: 2,
@@ -173,7 +205,10 @@ export default function Utang() {
                   }}
                 >
                   <T kind="label">{t(c.label)}</T>
-                  <T color={c.tone} style={{ fontSize: 22, fontWeight: "800", marginTop: 4 }}>
+                  <T
+                    color={c.tone}
+                    style={{ fontSize: 22, fontWeight: "800", marginTop: 4 }}
+                  >
                     {peso(c.total)}
                   </T>
                 </Card>
@@ -183,12 +218,15 @@ export default function Utang() {
 
           <SectionHeader
             title={filter === "owed" ? t("Owed to me") : t("I owe")}
-            actionLabel={t("New")}
+            actionLabel={t("Add utang")}
             onAction={openNew}
           />
 
           {list.length === 0 ? (
-            <EmptyState icon="checkmark-circle-outline" text={t("Nothing here yet.")} />
+            <EmptyState
+              icon="checkmark-circle-outline"
+              text={t("Nothing here yet.")}
+            />
           ) : (
             list.map((d) => {
               const rem = remainingOf(d);
@@ -198,8 +236,18 @@ export default function Utang() {
               const tone = isOwed ? colors.green : colors.red;
               return (
                 <Card key={d.id} style={done ? { opacity: 0.55 } : undefined}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                    <IconCircle name={isOwed ? "person" : "receipt"} color={tone} size={42} />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <IconCircle
+                      name={isOwed ? "person" : "receipt"}
+                      color={tone}
+                      size={42}
+                    />
                     <View style={{ flex: 1 }}>
                       <T kind="title" numberOfLines={1}>
                         {d.person}
@@ -210,7 +258,11 @@ export default function Utang() {
                       </T>
                     </View>
                     <Pressable onPress={() => confirmDelete(d)} hitSlop={10}>
-                      <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+                      <Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color={colors.subtext}
+                      />
                     </Pressable>
                   </View>
 
@@ -223,7 +275,11 @@ export default function Utang() {
                     }}
                   >
                     {done ? (
-                      <Ionicons name="checkmark-circle" size={24} color={colors.green} />
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={24}
+                        color={colors.green}
+                      />
                     ) : null}
                     <T
                       color={done ? colors.green : tone}
@@ -240,7 +296,8 @@ export default function Utang() {
 
                   {!done && (
                     <Button
-                      label={t("Record payment")}
+                      label={isOwed ? t("They paid me") : t("I paid them")}
+                      icon="cash"
                       outline
                       color={tone}
                       onPress={() => openPay(d)}
@@ -253,10 +310,11 @@ export default function Utang() {
         </Screen>
       )}
 
-      {/* New utang */}
+      {/* Add utang */}
       <Sheet
         visible={newOpen}
         title={t("New utang")}
+        saveLabel={t("Add utang")}
         onClose={() => setNewOpen(false)}
         onSave={saveNew}
       >
@@ -271,7 +329,11 @@ export default function Utang() {
             />
           ))}
         </Chips>
-        <Field placeholder={t("Person's name")} value={person} onChangeText={setPerson} />
+        <Field
+          placeholder={t("Person's name")}
+          value={person}
+          onChangeText={setPerson}
+        />
         <Field
           placeholder={t("Amount (₱)")}
           value={amount}
@@ -288,7 +350,12 @@ export default function Utang() {
       {/* Payment */}
       <Sheet
         visible={paying !== null}
-        title={paying?.direction === "owed" ? t("Payment received") : t("Payment made")}
+        title={
+          paying?.direction === "owed"
+            ? t("Payment received")
+            : t("Payment made")
+        }
+        saveLabel={t("Save payment")}
         onClose={() => setPaying(null)}
         onSave={savePay}
       >
@@ -307,7 +374,8 @@ export default function Utang() {
           keyboardType="numeric"
         />
         <Button
-          label={t("Mark fully paid")}
+          label={t("Paid in full")}
+          icon="checkmark-circle"
           outline
           color={colors.blue}
           onPress={markPaid}
