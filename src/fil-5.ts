@@ -70,11 +70,22 @@ const fil: Record<string, string> = {
   "See all": "Tingnan lahat",
   "Where is it from?": "Saan galing?",
   "What is it for?": "Para saan ito?",
+  "Tap a wallet to update its balance":
+    "I-tap ang wallet para i-update ang balanse",
 
   // My Money
   "Add wallet": "Magdagdag ng wallet",
   "Adding here": "Dito idadagdag",
   Edit: "I-edit",
+  "Update balance": "I-update ang balanse",
+  "Update {name} balance": "I-update ang balanse ng {name}",
+  "Open your {name} app and type the balance you see.":
+    "Buksan ang {name} app at ilagay ang balanseng nakikita mo.",
+  "Save balance": "I-save ang balanse",
+  "Difference: {n}": "Pagkakaiba: {n}",
+  "Updated today": "Na-update ngayon",
+  "Updated yesterday": "Na-update kahapon",
+  "Updated {n} days ago": "Na-update {n} araw na ang nakalipas",
 
   // Utang
   "Money you lent or borrowed.": "Perang ipinahiram o inutang mo.",

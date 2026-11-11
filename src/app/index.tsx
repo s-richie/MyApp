@@ -5,6 +5,7 @@ import { BackHandler, Pressable, Text, View } from "react-native";
 import { AddMode, AddSheet } from "../add-sheet";
 import { CATEGORIES, categoryOf, useData } from "../app-data";
 import { useTheme } from "../app-theme";
+import { BalanceSheet } from "../balance-sheet";
 import { useI18n } from "../i18n";
 import { BotTip } from "../ipon-bot";
 import { moneyIcon, moneyTitle } from "../money";
@@ -83,6 +84,7 @@ export default function Home() {
 
   const [view, setView] = useState<Inline>(null); // Utang or Ambagan, shown right here
   const [sheet, setSheet] = useState<AddMode | null>(null); // add money / add expense
+  const [balanceFor, setBalanceFor] = useState<string | null>(null); // update a wallet balance
 
   useEffect(() => {
     if (!view) return;
@@ -219,9 +221,10 @@ export default function Home() {
             }}
           >
             {wallets.map((w) => (
-              <View
+              <Pressable
                 key={w.id}
-                style={{
+                onPress={() => setBalanceFor(w.id)}
+                style={({ pressed }) => ({
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 6,
@@ -229,7 +232,8 @@ export default function Home() {
                   borderRadius: 14,
                   paddingVertical: 7,
                   paddingHorizontal: 12,
-                }}
+                  opacity: pressed ? 0.8 : 1,
+                })}
               >
                 <Ionicons
                   name={iconOf(w, "wallet")}
@@ -245,9 +249,15 @@ export default function Home() {
                 <Text maxFontSizeMultiplier={1.2} style={{ color: "#ffffff" }}>
                   {peso(walletBalance(w.id))}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </View>
+          <Text
+            maxFontSizeMultiplier={1.2}
+            style={{ color: "#dcfce7", fontSize: 12, marginTop: 10 }}
+          >
+            {t("Tap a wallet to update its balance")}
+          </Text>
         </View>
 
         {/* What do you want to do? */}
@@ -466,6 +476,7 @@ export default function Home() {
       </Screen>
 
       <AddSheet mode={sheet} onClose={() => setSheet(null)} />
+      <BalanceSheet walletId={balanceFor} onClose={() => setBalanceFor(null)} />
     </>
   );
 }
