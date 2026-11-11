@@ -1,11 +1,21 @@
-import { useState } from "react";
-import { View, Pressable, Switch, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Alert, Pressable, Switch, View } from "react-native";
+import { CATEGORIES, NewDebt, useData } from "./app-data";
 import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
-import { useData, CATEGORIES, NewDebt } from "./app-data";
+import {
+  Button,
+  Card,
+  Chip,
+  Chips,
+  Field,
+  peso,
+  safeIcon,
+  Screen,
+  T,
+} from "./ui";
 import { WalletPicker } from "./wallet-picker";
-import { Screen, Card, T, Button, Field, Chip, Chips, safeIcon, peso } from "./ui";
 
 type Mode = "me" | "friend";
 
@@ -26,7 +36,8 @@ export function Ambagan() {
   const [category, setCategory] = useState("food");
   const [walletId, setWalletId] = useState("");
 
-  const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
+  const activeWallet =
+    wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
 
   const totalNum = Number(total) || 0;
   // each friend pays this (rounded up to the centavo so the bill is covered)
@@ -72,25 +83,36 @@ export function Ambagan() {
         recordMine
           ? t(
               "Added {n} utang entries of {amt} each and your share of {share} as an expense.",
-              { n: people - 1, amt: peso(each), share: peso(myShare) }
+              { n: people - 1, amt: peso(each), share: peso(myShare) },
             )
           : t("Added {n} utang entries of {amt} each.", {
               n: people - 1,
               amt: peso(each),
-            })
+            }),
       );
     } else {
       const who = payer.trim();
       if (!who) {
-        Alert.alert(t("Who paid?"), t("Enter the name of the person who paid."));
+        Alert.alert(
+          t("Who paid?"),
+          t("Enter the name of the person who paid."),
+        );
         return;
       }
       addDebts([
-        { person: who, amount: each, direction: "owe", note: `Ambagan: ${label}` },
+        {
+          person: who,
+          amount: each,
+          direction: "owe",
+          note: `Ambagan: ${label}`,
+        },
       ]);
       Alert.alert(
         t("Saved!"),
-        t("Added {amt} to what you owe {name}.", { amt: peso(each), name: who })
+        t("Added {amt} to what you owe {name}.", {
+          amt: peso(each),
+          name: who,
+        }),
       );
     }
     reset();
@@ -109,15 +131,17 @@ export function Ambagan() {
 
   return (
     <Screen>
+      <T kind="muted">{t("Split a bill with friends.")}</T>
+
       <Chips>
         <Chip
-          label={t("I paid")}
+          label={t("I paid the bill")}
           icon="wallet"
           active={mode === "me"}
           onPress={() => setMode("me")}
         />
         <Chip
-          label={t("A friend paid")}
+          label={t("A friend paid the bill")}
           icon="person"
           active={mode === "friend"}
           onPress={() => setMode("friend")}
@@ -147,13 +171,26 @@ export function Ambagan() {
             marginTop: 8,
           }}
         >
-          <Pressable style={stepBtn} onPress={() => setPeople(Math.max(2, people - 1))}>
+          <Pressable
+            style={stepBtn}
+            onPress={() => setPeople(Math.max(2, people - 1))}
+          >
             <Ionicons name="remove" size={22} color={colors.text} />
           </Pressable>
-          <T style={{ fontSize: 28, fontWeight: "800", minWidth: 40, textAlign: "center" }}>
+          <T
+            style={{
+              fontSize: 28,
+              fontWeight: "800",
+              minWidth: 40,
+              textAlign: "center",
+            }}
+          >
             {people}
           </T>
-          <Pressable style={stepBtn} onPress={() => setPeople(Math.min(20, people + 1))}>
+          <Pressable
+            style={stepBtn}
+            onPress={() => setPeople(Math.min(20, people + 1))}
+          >
             <Ionicons name="add" size={22} color={colors.text} />
           </Pressable>
         </View>
@@ -190,7 +227,9 @@ export function Ambagan() {
           </Card>
 
           <Card>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
               <T kind="title" style={{ flex: 1 }}>
                 {t("Record my share as an expense")}
               </T>
@@ -230,7 +269,9 @@ export function Ambagan() {
       )}
 
       <Button
-        label={mode === "me" ? t("Save and add to utang") : t("Add to what I owe")}
+        label={
+          mode === "me" ? t("Save: friends owe me") : t("Save: I owe them")
+        }
         icon="checkmark-circle"
         onPress={handleSave}
       />

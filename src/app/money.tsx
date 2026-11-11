@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import { INCOME_SOURCES, useData, Wallet } from "../app-data";
 import { useTheme } from "../app-theme";
+import { BalanceSheet } from "../balance-sheet";
 import { useI18n } from "../i18n";
 import { moneyIcon, moneyTitle } from "../money";
 import {
@@ -23,6 +24,16 @@ import {
   T,
   WALLET_ICONS,
 } from "../ui";
+
+// whole days since a date (0 = today)
+const daysSince = (iso?: string) => {
+  if (!iso) return null;
+  const a = new Date(iso);
+  const b = new Date();
+  a.setHours(0, 0, 0, 0);
+  b.setHours(0, 0, 0, 0);
+  return Math.max(Math.round((b.getTime() - a.getTime()) / 86400000), 0);
+};
 
 export default function MyMoney() {
   const { colors } = useTheme();
@@ -45,6 +56,7 @@ export default function MyMoney() {
   const [source, setSource] = useState("allowance");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [balanceFor, setBalanceFor] = useState<string | null>(null);
 
   // wallet sheet
   const [sheet, setSheet] = useState(false);
@@ -112,6 +124,19 @@ export default function MyMoney() {
     );
   };
 
+  // "Updated today", "Updated 9 days ago"...
+  const freshness = (w: Wallet) => {
+    const n = daysSince(w.checkedAt);
+    if (n === null) return null;
+    const text =
+      n === 0
+        ? t("Updated today")
+        : n === 1
+          ? t("Updated yesterday")
+          : t("Updated {n} days ago", { n });
+    return { text, stale: n > 7 };
+  };
+
   return (
     <Screen>
       {/* Total */}
@@ -142,12 +167,13 @@ export default function MyMoney() {
       {/* Wallets */}
       <SectionHeader
         title={t("Wallets")}
-        actionLabel={t("New")}
+        actionLabel={t("Add wallet")}
         onAction={openNew}
       />
       {wallets.map((w) => {
         const bal = walletBalance(w.id);
         const isSel = selected.id === w.id;
+        const fresh = freshness(w);
         return (
           <Pressable key={w.id} onPress={() => setSelectedId(w.id)}>
             <Card
@@ -164,33 +190,70 @@ export default function MyMoney() {
                   <T kind="title" numberOfLines={1}>
                     {w.name}
                   </T>
-                  <T
-                    color={bal < 0 ? colors.red : undefined}
-                    style={{ fontSize: 22, fontWeight: "800" }}
-                  >
-                    {peso(bal)}
-                  </T>
+                  {isSel ? (
+                    <T kind="muted" color={colors.green}>
+                      {t("Adding here")}
+                    </T>
+                  ) : null}
+                  {fresh ? (
+                    <T kind="muted" color={fresh.stale ? "#f59e0b" : undefined}>
+                      {fresh.text}
+                    </T>
+                  ) : null}
                 </View>
-                {isSel ? (
+                <T
+                  color={bal < 0 ? colors.red : undefined}
+                  style={{ fontSize: 22, fontWeight: "800", flexShrink: 1 }}
+                >
+                  {peso(bal)}
+                </T>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 18,
+                  marginTop: 12,
+                }}
+              >
+                <Pressable
+                  onPress={() => setBalanceFor(w.id)}
+                  hitSlop={8}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
                   <Ionicons
-                    name="checkmark-circle"
-                    size={22}
+                    name="refresh-circle"
+                    size={20}
                     color={colors.green}
                   />
-                ) : null}
-                <Pressable onPress={() => openEdit(w)} hitSlop={10}>
+                  <T color={colors.green} style={{ fontWeight: "700" }}>
+                    {t("Update balance")}
+                  </T>
+                </Pressable>
+                <Pressable
+                  onPress={() => openEdit(w)}
+                  hitSlop={8}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
                   <Ionicons
                     name="create-outline"
-                    size={20}
-                    color={colors.subtext}
+                    size={18}
+                    color={colors.blue}
                   />
+                  <T color={colors.blue} style={{ fontWeight: "600" }}>
+                    {t("Edit")}
+                  </T>
                 </Pressable>
-                <Pressable onPress={() => confirmDelete(w)} hitSlop={10}>
-                  <Ionicons
-                    name="trash-outline"
-                    size={20}
-                    color={colors.subtext}
-                  />
+                <Pressable
+                  onPress={() => confirmDelete(w)}
+                  hitSlop={8}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.red} />
+                  <T color={colors.red} style={{ fontWeight: "600" }}>
+                    {t("Delete")}
+                  </T>
                 </Pressable>
               </View>
             </Card>
@@ -267,6 +330,8 @@ export default function MyMoney() {
         />
         <IconPicker value={wIcon} options={WALLET_ICONS} onChange={setWIcon} />
       </Sheet>
+
+      <BalanceSheet walletId={balanceFor} onClose={() => setBalanceFor(null)} />
     </Screen>
   );
 }

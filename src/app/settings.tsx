@@ -1,84 +1,13 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Alert, Pressable, Switch, View } from "react-native";
+import { Switch, View } from "react-native";
 import { AccountCard } from "../account-card";
-import { useData, Wallet } from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
 import { SecurityCard } from "../security-card";
-import {
-  Card,
-  Chip,
-  Chips,
-  Field,
-  IconCircle,
-  iconOf,
-  IconPicker,
-  peso,
-  Screen,
-  SectionHeader,
-  Sheet,
-  T,
-  WALLET_ICONS,
-} from "../ui";
+import { Card, Chip, Chips, IconCircle, Screen, T } from "../ui";
 
 export default function Settings() {
   const { isDark, setDark, colors } = useTheme();
   const { t, lang, setLang } = useI18n();
-  const { wallets, addWallet, updateWallet, deleteWallet, walletBalance } =
-    useData();
-
-  const [sheet, setSheet] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [wName, setWName] = useState("");
-  const [wIcon, setWIcon] = useState<string>(WALLET_ICONS[0]);
-  const [wStart, setWStart] = useState("");
-
-  const openNew = () => {
-    setEditingId(null);
-    setWName("");
-    setWIcon(WALLET_ICONS[0]);
-    setWStart("0");
-    setSheet(true);
-  };
-
-  const openEdit = (w: Wallet) => {
-    setEditingId(w.id);
-    setWName(w.name);
-    setWIcon(iconOf(w, "wallet"));
-    setWStart(String(w.start));
-    setSheet(true);
-  };
-
-  const saveWallet = () => {
-    const start = Number(wStart);
-    if (!wName.trim() || isNaN(start)) return;
-    if (editingId) {
-      updateWallet(editingId, { name: wName.trim(), icon: wIcon, start });
-    } else {
-      addWallet(wName.trim(), wIcon, start);
-    }
-    setSheet(false);
-  };
-
-  const confirmDelete = (w: Wallet) => {
-    if (wallets.length <= 1) {
-      Alert.alert(t("Can't delete"), t("You need at least one wallet."));
-      return;
-    }
-    Alert.alert(
-      t('Delete "{name}"?', { name: w.name }),
-      t("Its entries will be moved to another wallet."),
-      [
-        { text: t("Cancel"), style: "cancel" },
-        {
-          text: t("Delete"),
-          style: "destructive",
-          onPress: () => deleteWallet(w.id),
-        },
-      ],
-    );
-  };
 
   return (
     <Screen>
@@ -122,74 +51,6 @@ export default function Settings() {
 
       {/* Security */}
       <SecurityCard />
-      <View style={{ height: 16 }} />
-
-      {/* Wallets */}
-      <SectionHeader
-        title={t("Wallets")}
-        actionLabel={t("New")}
-        onAction={openNew}
-      />
-
-      {wallets.map((w) => {
-        const bal = walletBalance(w.id);
-        return (
-          <Card key={w.id}>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            >
-              <IconCircle name={iconOf(w, "wallet")} size={42} />
-              <View style={{ flex: 1 }}>
-                <T kind="title" numberOfLines={1}>
-                  {w.name}
-                </T>
-                <T kind="muted">{t("Start: {n}", { n: peso(w.start) })}</T>
-              </View>
-              <Pressable onPress={() => openEdit(w)} hitSlop={10}>
-                <Ionicons
-                  name="create-outline"
-                  size={20}
-                  color={colors.subtext}
-                />
-              </Pressable>
-              <Pressable onPress={() => confirmDelete(w)} hitSlop={10}>
-                <Ionicons
-                  name="trash-outline"
-                  size={20}
-                  color={colors.subtext}
-                />
-              </Pressable>
-            </View>
-            <T
-              color={bal < 0 ? colors.red : undefined}
-              style={{ fontSize: 24, fontWeight: "800", marginTop: 10 }}
-            >
-              {peso(bal)}
-            </T>
-          </Card>
-        );
-      })}
-
-      {/* Wallet sheet */}
-      <Sheet
-        visible={sheet}
-        title={editingId ? t("Edit wallet") : t("New wallet")}
-        onClose={() => setSheet(false)}
-        onSave={saveWallet}
-      >
-        <Field
-          placeholder={t("Name (e.g. Maya, Bank)")}
-          value={wName}
-          onChangeText={setWName}
-        />
-        <Field
-          placeholder={t("Starting balance (₱)")}
-          value={wStart}
-          onChangeText={setWStart}
-          keyboardType="numeric"
-        />
-        <IconPicker value={wIcon} options={WALLET_ICONS} onChange={setWIcon} />
-      </Sheet>
     </Screen>
   );
 }

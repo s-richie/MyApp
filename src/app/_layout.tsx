@@ -91,10 +91,10 @@ function TabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="ipon"
+          name="money"
           options={{
-            title: "Ipon",
-            headerTitle: () => <HeaderTitle title="Ipon" />,
+            title: t("My Money"),
+            headerTitle: () => <HeaderTitle title={t("My Money")} />,
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="wallet" size={size} color={color} />
             ),

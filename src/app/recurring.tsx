@@ -1,33 +1,33 @@
-import { useState } from "react";
-import { View, Pressable, Switch, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Alert, Pressable, Switch, View } from "react-native";
+import {
+  CATEGORIES,
+  Frequency,
+  INCOME_SOURCES,
+  Kind,
+  Recurring,
+  categoryOf,
+  incomeSourceOf,
+  useData,
+} from "../app-data";
 import { useTheme } from "../app-theme";
 import { useI18n } from "../i18n";
 import {
-  useData,
-  Recurring,
-  Frequency,
-  Kind,
-  CATEGORIES,
-  categoryOf,
-  DEFAULT_GOAL_ID,
-} from "../app-data";
-import { WalletPicker } from "../wallet-picker";
-import {
-  Screen,
   Card,
-  T,
-  IconCircle,
   Chip,
   Chips,
-  Field,
-  Sheet,
-  SectionHeader,
   EmptyState,
-  iconOf,
-  safeIcon,
+  Field,
+  IconCircle,
+  Screen,
+  SectionHeader,
+  Sheet,
+  T,
   peso,
+  safeIcon,
 } from "../ui";
+import { WalletPicker } from "../wallet-picker";
 
 const WEEKDAYS_LONG = [
   "Sunday",
@@ -54,7 +54,7 @@ const ordinal = (n: number) => {
 export default function RecurringScreen() {
   const { colors } = useTheme();
   const { t, lang, fdate, dayShort } = useI18n();
-  const { recurring, addRecurring, toggleRecurring, deleteRecurring, goals, wallets } =
+  const { recurring, addRecurring, toggleRecurring, deleteRecurring, wallets } =
     useData();
 
   const [open, setOpen] = useState(false);
@@ -62,14 +62,14 @@ export default function RecurringScreen() {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [category, setCategory] = useState("food");
-  const [goalId, setGoalId] = useState("");
+  const [source, setSource] = useState("allowance");
   const [walletId, setWalletId] = useState("");
   const [frequency, setFrequency] = useState<Frequency>("weekly");
   const [weekday, setWeekday] = useState(1);
   const [monthDay, setMonthDay] = useState("1");
 
-  const activeGoal = goals.find((g) => g.id === goalId)?.id ?? goals[0].id;
-  const activeWallet = wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
+  const activeWallet =
+    wallets.find((w) => w.id === walletId)?.id ?? wallets[0].id;
 
   const describe = (r: Recurring) => {
     if (r.frequency === "daily") return t("Every day");
@@ -86,6 +86,7 @@ export default function RecurringScreen() {
     setAmount("");
     setNote("");
     setCategory("food");
+    setSource("allowance");
     setFrequency("weekly");
     setWeekday(1);
     setMonthDay("1");
@@ -100,7 +101,7 @@ export default function RecurringScreen() {
       kind,
       amount: value,
       note: note.trim(),
-      tag: kind === "gastos" ? category : activeGoal,
+      tag: kind === "gastos" ? category : source,
       walletId: activeWallet,
       frequency,
       day: frequency === "weekly" ? weekday : dom,
@@ -111,17 +112,25 @@ export default function RecurringScreen() {
   const confirmDelete = (r: Recurring) => {
     Alert.alert(
       t("Delete this recurring entry?"),
-      t("Entries it already added will stay in History."),
+      t("Entries it added will also be deleted."),
       [
         { text: t("Cancel"), style: "cancel" },
-        { text: t("Delete"), style: "destructive", onPress: () => deleteRecurring(r.id) },
-      ]
+        {
+          text: t("Delete"),
+          style: "destructive",
+          onPress: () => deleteRecurring(r.id),
+        },
+      ],
     );
   };
 
   return (
     <Screen>
-      <SectionHeader title={t("Recurring")} actionLabel={t("New")} onAction={openNew} />
+      <SectionHeader
+        title={t("Recurring")}
+        actionLabel={t("Add recurring")}
+        onAction={openNew}
+      />
       <T kind="muted" style={{ marginBottom: 12 }}>
         {t("Added automatically when due.")}
       </T>
@@ -130,30 +139,29 @@ export default function RecurringScreen() {
         <EmptyState icon="repeat" text={t("No recurring entries yet.")} />
       ) : (
         recurring.map((r) => {
-          const isIpon = r.kind === "ipon";
-          const g = goals.find((x) => x.id === (r.tag ?? DEFAULT_GOAL_ID));
-          const label = isIpon ? g?.name ?? "Ipon" : t(categoryOf(r.tag).label);
-          const icon = isIpon
-            ? g
-              ? iconOf(g, "flag")
-              : "flag"
-            : safeIcon(categoryOf(r.tag).icon, "apps");
-          const tone = isIpon ? colors.green : colors.red;
+          const isIn = r.kind === "ipon";
+          const meta = isIn ? incomeSourceOf(r.tag) : categoryOf(r.tag);
+          const icon = safeIcon(meta.icon, isIn ? "cash" : "apps");
+          const tone = isIn ? colors.green : colors.red;
           return (
             <Card key={r.id} style={!r.active ? { opacity: 0.55 } : undefined}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+              >
                 <IconCircle name={icon} color={tone} size={42} />
                 <View style={{ flex: 1 }}>
                   <T kind="title" numberOfLines={1}>
-                    {r.note || label}
+                    {r.note || t(meta.label)}
                   </T>
                   <T kind="muted">{describe(r)}</T>
                   <T kind="muted">
-                    {r.active ? t("Next: {d}", { d: fdate(r.nextDate) }) : t("Paused")}
+                    {r.active
+                      ? t("Next: {d}", { d: fdate(r.nextDate) })
+                      : t("Paused")}
                   </T>
                 </View>
                 <T color={tone} style={{ fontWeight: "700" }}>
-                  {isIpon ? "+" : "-"}
+                  {isIn ? "+" : "-"}
                   {peso(r.amount)}
                 </T>
               </View>
@@ -171,7 +179,11 @@ export default function RecurringScreen() {
                   trackColor={{ false: "#d1d5db", true: colors.green }}
                 />
                 <Pressable onPress={() => confirmDelete(r)} hitSlop={10}>
-                  <Ionicons name="trash-outline" size={20} color={colors.subtext} />
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color={colors.subtext}
+                  />
                 </Pressable>
               </View>
             </Card>
@@ -182,19 +194,20 @@ export default function RecurringScreen() {
       <Sheet
         visible={open}
         title={t("New recurring entry")}
+        saveLabel={t("Add recurring")}
         onClose={() => setOpen(false)}
         onSave={save}
       >
         <Chips>
           <Chip
-            label="Gastos"
+            label={t("Expense")}
             icon="remove-circle"
             active={kind === "gastos"}
             color={colors.red}
             onPress={() => setKind("gastos")}
           />
           <Chip
-            label="Ipon"
+            label={t("Income")}
             icon="add-circle"
             active={kind === "ipon"}
             onPress={() => setKind("ipon")}
@@ -228,13 +241,13 @@ export default function RecurringScreen() {
           </Chips>
         ) : (
           <Chips>
-            {goals.map((g) => (
+            {INCOME_SOURCES.map((s) => (
               <Chip
-                key={g.id}
-                label={g.name}
-                icon={iconOf(g, "flag")}
-                active={activeGoal === g.id}
-                onPress={() => setGoalId(g.id)}
+                key={s.key}
+                label={t(s.label)}
+                icon={safeIcon(s.icon, "cash")}
+                active={source === s.key}
+                onPress={() => setSource(s.key)}
               />
             ))}
           </Chips>

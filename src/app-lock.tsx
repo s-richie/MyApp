@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "./app-theme";
+import { Coin } from "./hero-decor";
 import { useI18n } from "./i18n";
 import { PIN_LENGTH, PinDots, PinPad } from "./pin-pad";
 
@@ -236,7 +237,7 @@ function LockScreen({
     setEntered((e) => e.slice(0, -1));
   };
 
-  const robot = height < 620 ? 70 : height < 740 ? 90 : 110;
+  const robot = height < 620 ? 64 : height < 740 ? 80 : 100;
 
   return (
     <View
@@ -262,21 +263,24 @@ function LockScreen({
           paddingBottom: insets.bottom + 12,
         }}
       >
-        <Image
-          source={require("../assets/images/splash-icon.png")}
-          style={{ width: robot, height: robot }}
-          resizeMode="contain"
-        />
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Coin size={Math.round(robot * 0.7)} />
+          <Image
+            source={require("../assets/images/splash-icon.png")}
+            style={{
+              width: robot,
+              height: robot,
+              marginLeft: -Math.round(robot * 0.1),
+            }}
+            resizeMode="contain"
+          />
+        </View>
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{
-            color: colors.text,
-            fontSize: 24,
-            fontWeight: "bold",
-            marginBottom: 4,
-          }}
+          style={{ fontSize: 24, fontWeight: "800", marginBottom: 4 }}
         >
-          MoneyMate
+          <Text style={{ color: colors.text }}>Money</Text>
+          <Text style={{ color: "#ca8a04" }}>Mate</Text>
         </Text>
         <Text
           maxFontSizeMultiplier={1.2}

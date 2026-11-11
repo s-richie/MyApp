@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "./app-theme";
-import { HeroBackdrop } from "./hero-decor";
+import { Coin, HeroBackdrop, Wordmark } from "./hero-decor";
 import { useI18n } from "./i18n";
 import { Button, Chip, IconCircle, IconName, T } from "./ui";
 
@@ -22,8 +22,8 @@ const FEATURES: { icon: IconName; tone: string; title: string; sub: string }[] =
     {
       icon: "wallet",
       tone: "#16a34a",
-      title: "Save money",
-      sub: "Add ipon to your goals",
+      title: "Track your money",
+      sub: "Add the money you have",
     },
     {
       icon: "receipt",
@@ -32,10 +32,10 @@ const FEATURES: { icon: IconName; tone: string; title: string; sub: string }[] =
       sub: "Log your gastos",
     },
     {
-      icon: "trophy",
+      icon: "people",
       tone: "#f59e0b",
-      title: "Reach goals",
-      sub: "See your progress",
+      title: "Utang & Ambagan",
+      sub: "Who owes who",
     },
   ];
 
@@ -105,10 +105,10 @@ export function Welcome() {
     AsyncStorage.setItem(KEY, "1").catch(() => {});
   };
 
-  // the hero and the robot scale with the screen height
+  // the hero, coin and robot scale with the screen height
   const heroH =
-    Math.max(200, Math.min(Math.round(height * 0.36), 340)) + insets.top;
-  const robot = Math.min(130, Math.round((heroH - insets.top) * 0.45));
+    Math.max(210, Math.min(Math.round(height * 0.37), 350)) + insets.top;
+  const robot = Math.min(120, Math.round((heroH - insets.top) * 0.4));
 
   return (
     <View style={overlay}>
@@ -125,6 +125,8 @@ export function Welcome() {
         <HeroBackdrop />
         <Animated.View
           style={{
+            flexDirection: "row",
+            alignItems: "center",
             transform: [
               {
                 translateY: bounce.interpolate({
@@ -135,23 +137,20 @@ export function Welcome() {
             ],
           }}
         >
+          <Coin size={Math.round(robot * 0.7)} />
           <Image
             source={require("../assets/images/splash-icon.png")}
-            style={{ width: robot, height: robot }}
+            style={{
+              width: robot,
+              height: robot,
+              marginLeft: -Math.round(robot * 0.1),
+            }}
             resizeMode="contain"
           />
         </Animated.View>
-        <Text
-          maxFontSizeMultiplier={1.2}
-          style={{
-            color: "#fff",
-            fontSize: 32,
-            fontWeight: "800",
-            marginTop: 2,
-          }}
-        >
-          MoneyMate
-        </Text>
+        <View style={{ marginTop: 4 }}>
+          <Wordmark size={34} />
+        </View>
         <Text
           maxFontSizeMultiplier={1.2}
           style={{
@@ -162,7 +161,7 @@ export function Welcome() {
             paddingHorizontal: 24,
           }}
         >
-          {t("Save smart. Spend wise.")}
+          {t("Your money buddy")}
         </Text>
       </View>
 

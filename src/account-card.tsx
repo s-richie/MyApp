@@ -69,15 +69,15 @@ export function AccountCard() {
   const statusText = !user
     ? t("Your data stays on this phone.")
     : status === "syncing"
-      ? t("Syncing...")
+      ? t("Backing up...")
       : status === "synced"
-        ? t("Synced at {time}", { time })
+        ? t("Backed up at {time}", { time })
         : status === "offline"
           ? t("Waiting for internet")
           : status === "error"
-            ? t("Sync failed. Tap Sync now.")
+            ? t("Backup failed. Tap Back up now.")
             : status === "paused"
-              ? t("Sync paused")
+              ? t("Backup paused")
               : t("Signed in");
 
   const statusColor =
@@ -97,7 +97,7 @@ export function AccountCard() {
         />
         <View style={{ flex: 1 }}>
           <T kind="title" numberOfLines={1}>
-            {user ? (user.email ?? t("Account")) : t("Account")}
+            {user ? (user.email ?? t("Account")) : t("Not signed in")}
           </T>
           <T kind="muted" color={user ? statusColor : undefined}>
             {statusText}
@@ -108,8 +108,8 @@ export function AccountCard() {
       {user ? (
         <>
           <Button
-            label={t("Sync now")}
-            icon="sync"
+            label={t("Back up now")}
+            icon="cloud-upload"
             outline
             color={colors.blue}
             onPress={syncNow}
@@ -138,7 +138,11 @@ export function AccountCard() {
           </Pressable>
         </>
       ) : (
-        <Button label={t("Sign in")} icon="log-in" onPress={openAuth} />
+        <Button
+          label={t("Sign in to back up your data")}
+          icon="log-in"
+          onPress={openAuth}
+        />
       )}
 
       <Sheet

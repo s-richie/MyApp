@@ -37,6 +37,7 @@ export type Wallet = {
   icon?: string;
   emoji?: string;
   start: number; // starting balance
+  checkedAt?: string; // last time the balance was matched with the real app
 };
 
 // "owed" = they owe me, "owe" = I owe them
@@ -131,7 +132,9 @@ type EntryPatch = Partial<
   Pick<Entry, "amount" | "note" | "category" | "walletId">
 >;
 type GoalPatch = Partial<Pick<Goal, "name" | "icon" | "emoji" | "target">>;
-type WalletPatch = Partial<Pick<Wallet, "name" | "icon" | "emoji" | "start">>;
+type WalletPatch = Partial<
+  Pick<Wallet, "name" | "icon" | "emoji" | "start" | "checkedAt">
+>;
 
 type DataContextType = {
   entries: Entry[];
@@ -456,7 +459,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const w = wallets.find((x) => x.id === walletId);
     if (!w) return;
     const diff = balance - walletBalance(walletId);
-    updateWallet(walletId, { start: w.start + diff });
+    updateWallet(walletId, {
+      start: w.start + diff,
+      checkedAt: new Date().toISOString(),
+    });
   };
 
   // ---- Utang ----

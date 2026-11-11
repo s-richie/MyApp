@@ -5,13 +5,12 @@ import {
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "./app-theme";
-import { HeroBackdrop } from "./hero-decor";
+import { Coin, HeroBackdrop, Wordmark } from "./hero-decor";
 import { useI18n } from "./i18n";
 import { Button, Field, T } from "./ui";
 
@@ -167,7 +166,7 @@ export function AuthScreen({
   // hero and robot scale with the screen height
   const heroBody = Math.max(150, Math.min(Math.round(height * 0.24), 240));
   const heroH = heroBody + insets.top;
-  const robot = Math.min(96, Math.round(heroBody * 0.5));
+  const robot = Math.min(96, Math.round(heroBody * 0.45));
 
   const mainLabel =
     mode === "in"
@@ -233,17 +232,21 @@ export function AuthScreen({
         }}
       >
         <HeroBackdrop />
-        <Image
-          source={require("../assets/images/splash-icon.png")}
-          style={{ width: robot, height: robot }}
-          resizeMode="contain"
-        />
-        <Text
-          maxFontSizeMultiplier={1.2}
-          style={{ color: "#fff", fontSize: 26, fontWeight: "800" }}
-        >
-          MoneyMate
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Coin size={Math.round(robot * 0.7)} />
+          <Image
+            source={require("../assets/images/splash-icon.png")}
+            style={{
+              width: robot,
+              height: robot,
+              marginLeft: -Math.round(robot * 0.1),
+            }}
+            resizeMode="contain"
+          />
+        </View>
+        <View style={{ marginTop: 4 }}>
+          <Wordmark size={28} />
+        </View>
       </View>
 
       {/* Form card */}
@@ -428,7 +431,7 @@ export function AuthScreen({
                   style={{ padding: 14, alignItems: "center" }}
                 >
                   <T color={colors.subtext} style={{ fontWeight: "600" }}>
-                    {canCancel ? t("Cancel") : t("Continue without account")}
+                    {canCancel ? t("Cancel") : t("Skip for now")}
                   </T>
                 </Pressable>
               )}
