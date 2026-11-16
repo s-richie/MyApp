@@ -163,7 +163,7 @@ type DataContextType = {
   debts: Debt[];
   addDebt: (item: NewDebt) => void;
   addDebts: (items: NewDebt[]) => void;
-  recordPayment: (id: string, amount: number) => void;
+  recordPayment: (id: string, amount: number, walletId?: string) => void;
   deleteDebt: (id: string) => void;
   recurring: Recurring[];
   addRecurring: (item: NewRecurring) => void;
@@ -484,12 +484,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setDebts((prev) => [...items.map(toDebt), ...prev]);
   };
 
-  const recordPayment = (id: string, amount: number) => {
+  const recordPayment = (id: string, amount: number, walletId?: string) => {
+    const debt = debts.find((d) => d.id === id);
+    if (!debt || !Number.isFinite(amount) || amount <= 0) return;
+
+    // A payment is also a real wallet transaction: money received is income,
+    // while money paid is an expense. Keep both records in sync and cap the
+    // transaction at the debt's remaining balance.
+    const remaining = Math.max(
+      Math.round((debt.amount - debt.paid) * 100) / 100,
+      0,
+    );
+    const payment = Math.min(remaining, amount);
+    if (payment <= 0) return;
+
     setDebts((prev) =>
       prev.map((d) =>
-        d.id === id ? { ...d, paid: Math.min(d.amount, d.paid + amount) } : d,
+        d.id === id ? { ...d, paid: Math.min(d.amount, d.paid + payment) } : d,
       ),
     );
+    const entry: Entry = {
+      id: makeId(),
+      kind: debt.direction === "owed" ? "ipon" : "gastos",
+      amount: payment,
+      note:
+        debt.direction === "owed"
+          ? `Payment received • ${debt.person}`
+          : `Payment made • ${debt.person}`,
+      date: new Date().toISOString(),
+      walletId: walletId ?? wallets[0]?.id ?? DEFAULT_WALLET_ID,
+      category: debt.direction === "owed" ? "other" : "other",
+    };
+    setEntries((prev) => [entry, ...prev]);
+    setSelectedMonth(currentMonth);
   };
 
   const deleteDebt = (id: string) => {

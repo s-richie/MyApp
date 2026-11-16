@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Platform, Pressable, Switch, View } from "react-native";
 import { useTheme } from "./app-theme";
 import { useI18n } from "./i18n";
-import { Button, Card, Chip, IconCircle, Screen, T } from "./ui";
+import { Card, Chip, IconCircle, Screen, T } from "./ui";
 
 // Show notifications (with sound and vibration) even while the app is open
 Notifications.setNotificationHandler({
@@ -191,6 +191,18 @@ export default function RemindersScreen() {
           const loaded: Reminder = { ...DEFAULT, ...d };
           remRef.current = loaded;
           setRem(loaded);
+
+          // The OS can remove scheduled notifications after a reinstall,
+          // restore, or permission change. Re-create the daily reminder when
+          // the saved setting is still enabled but its schedule is gone.
+          if (loaded.on) {
+            const scheduled =
+              await Notifications.getAllScheduledNotificationsAsync();
+            const exists = loaded.id
+              ? scheduled.some((n) => n.identifier === loaded.id)
+              : false;
+            if (!exists) await apply({ on: true });
+          }
           return;
         }
 
@@ -226,37 +238,6 @@ export default function RemindersScreen() {
 
   const stepMinute = (delta: number) =>
     apply({ minute: (remRef.current.minute + delta + 60) % 60 });
-
-  const sendTest = async () => {
-    try {
-      const ok = await ensurePermission();
-      if (!ok) {
-        Alert.alert(
-          t("Notifications are off"),
-          t(
-            "Allow notifications for Expo Go in your phone's settings, then try again.",
-          ),
-        );
-        return;
-      }
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "MoneyMate",
-          body: "It works! Reminders are ready.",
-          vibrate: VIBRATION,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 5,
-          ...channelPart(),
-        },
-      });
-      Alert.alert(t("Test sent"), t("Notification in 5 seconds."));
-    } catch (e) {
-      console.warn("Test notification error", e);
-      Alert.alert(t("Could not send the test"), String(e));
-    }
-  };
 
   return (
     <Screen>
@@ -320,14 +301,6 @@ export default function RemindersScreen() {
         ) : null}
       </Card>
 
-      <Card>
-        <T kind="title">{t("Test")}</T>
-        <Button
-          label={t("Send test notification")}
-          icon="notifications"
-          onPress={sendTest}
-        />
-      </Card>
     </Screen>
   );
 }
