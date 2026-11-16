@@ -14,6 +14,7 @@ import { AuthGate, AuthProvider } from "../auth";
 import { LanguageProvider, useI18n } from "../i18n";
 import { Splash } from "../splash";
 import { SyncProvider } from "../sync";
+import { UpdateChecker } from "../update-checker";
 import { Welcome } from "../welcome";
 
 function HeaderTitle({ title }: { title: string }) {
@@ -161,6 +162,7 @@ export default function Layout() {
                 <SyncProvider>
                   <View style={{ flex: 1 }}>
                     <TabsLayout />
+                    <UpdateChecker />
                     <AuthGate />
                     <Welcome />
                   </View>
